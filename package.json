@@ -14,7 +14,7 @@
     "@iconify-json/lucide": "^1.2.134",
     "@iconify-json/simple-icons": "^1.2.96",
     "@nuxt/ui": "^4.11.1",
-    "@nuxt4-layers/theme-manager": "github:nuxt4-layers/theme-manager#2349dc48c0257f18a2ccfa2765ca9059b30e762d",
+    "@nuxt4-layers/theme-manager": "github:nuxt4-layers/theme-manager",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3"
   },
