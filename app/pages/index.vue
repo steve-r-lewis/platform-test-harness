@@ -1,76 +1,89 @@
+<script setup lang="ts">
+const checks = [
+  'Theme Manager layer composes through its package root',
+  'Bundled semantic presentation stylesheet is active',
+  'Host-provided in-memory ThemeRepository is available',
+  'Host-provided actor and Authorization adapters are available',
+  'Theme Manager administration routes are supplied by the layer'
+]
+</script>
+
 <template>
-  <div>
-    <UPageHero
-      title="Nuxt Starter Template"
-      description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
-      :links="[{
-        label: 'Get started',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-        target: '_blank',
-        trailingIcon: 'i-lucide-arrow-right',
-        size: 'xl'
-      }, {
-        label: 'Use this template',
-        to: 'https://github.com/nuxt-ui-templates/starter',
-        target: '_blank',
-        icon: 'i-simple-icons-github',
-        size: 'xl',
-        color: 'neutral',
-        variant: 'subtle'
-      }]"
-    />
+  <UContainer class="py-12 space-y-10">
+    <div class="space-y-4">
+      <UBadge label="Integration harness" variant="subtle" />
+      <h1 class="text-4xl font-bold">
+        Theme Manager black-box test application
+      </h1>
+      <p class="max-w-3xl text-lg text-muted">
+        This application consumes Theme Manager as an independent Nuxt layer. It deliberately keeps
+        persistence, identity and authorization adapters minimal so integration failures remain easy to isolate.
+      </p>
+      <div class="flex gap-3">
+        <UButton to="/theme-manager" label="Open Theme Library" icon="i-lucide-palette" />
+        <UButton to="/theme-manager/new" label="Create Theme" variant="outline" icon="i-lucide-plus" />
+      </div>
+    </div>
 
-    <UPageSection
-      id="features"
-      title="Everything you need to build modern Nuxt apps"
-      description="Start with a solid foundation. This template includes all the essentials for building production-ready applications with Nuxt UI's powerful component system."
-      :features="[{
-        icon: 'i-lucide-rocket',
-        title: 'Production-ready from day one',
-        description: 'Pre-configured with TypeScript, ESLint, Tailwind CSS, and all the best practices. Focus on building features, not setting up tooling.'
-      }, {
-        icon: 'i-lucide-palette',
-        title: 'Beautiful by default',
-        description: 'Leveraging Nuxt UI\'s design system with automatic dark mode, consistent spacing, and polished components that look great out of the box.'
-      }, {
-        icon: 'i-lucide-zap',
-        title: 'Lightning fast',
-        description: 'Optimized for performance with SSR/SSG support, automatic code splitting, and edge-ready deployment. Your users will love the speed.'
-      }, {
-        icon: 'i-lucide-blocks',
-        title: '100+ components included',
-        description: 'Access Nuxt UI\'s comprehensive component library. From forms to navigation, everything is accessible, responsive, and customizable.'
-      }, {
-        icon: 'i-lucide-code-2',
-        title: 'Developer experience first',
-        description: 'Auto-imports, hot module replacement, and TypeScript support. Write less boilerplate and ship more features.'
-      }, {
-        icon: 'i-lucide-shield-check',
-        title: 'Built for scale',
-        description: 'Enterprise-ready architecture with proper error handling, SEO optimization, and security best practices built-in.'
-      }]"
-    />
+    <UCard>
+      <template #header>
+        <h2 class="text-xl font-semibold">
+          Composition checks
+        </h2>
+      </template>
 
-    <UPageSection>
-      <UPageCTA
-        title="Ready to build your next Nuxt app?"
-        description="Join thousands of developers building with Nuxt and Nuxt UI. Get this template and start shipping today."
-        variant="subtle"
-        :links="[{
-          label: 'Start building',
-          to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-          target: '_blank',
-          trailingIcon: 'i-lucide-arrow-right',
-          color: 'neutral'
-        }, {
-          label: 'View on GitHub',
-          to: 'https://github.com/nuxt-ui-templates/starter',
-          target: '_blank',
-          icon: 'i-simple-icons-github',
-          color: 'neutral',
-          variant: 'outline'
-        }]"
-      />
-    </UPageSection>
-  </div>
+      <ul class="space-y-3">
+        <li v-for="check in checks" :key="check" class="flex items-center gap-2">
+          <UIcon name="i-lucide-circle-check" class="size-5 text-success" />
+          <span>{{ check }}</span>
+        </li>
+      </ul>
+    </UCard>
+
+    <UCard>
+      <template #header>
+        <h2 class="text-xl font-semibold">
+          Semantic presentation probe
+        </h2>
+      </template>
+
+      <p class="mb-5 text-muted">
+        These controls consume Theme Manager's semantic presentation variables. Select the seeded
+        <strong>Harness Test Theme</strong> in the Theme Library and return here to observe runtime changes.
+      </p>
+
+      <div class="flex flex-wrap gap-4">
+        <button class="theme-probe">
+          Default
+        </button>
+        <button class="theme-probe theme-probe-hover">
+          Hover probe
+        </button>
+      </div>
+    </UCard>
+
+    <UAlert
+      title="Deliberately minimal adapters"
+      description="The repository is in-memory and resets when the Nitro server restarts. The test actor is test-user and the harness authorization adapter permits that actor. This is intentional: the harness tests Theme Manager integration, not infrastructure."
+      icon="i-lucide-flask-conical"
+      color="neutral"
+      variant="subtle"
+    />
+  </UContainer>
 </template>
+
+<style scoped>
+.theme-probe {
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--api-fill-primary-default);
+  color: var(--api-pen-primary-default);
+  box-shadow: var(--api-fill-primary-shadow);
+}
+
+.theme-probe:hover,
+.theme-probe-hover {
+  background: var(--api-fill-primary-hover);
+  color: var(--api-pen-primary-hover);
+}
+</style>

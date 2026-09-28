@@ -1,5 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  extends: ['@nuxt4-layers/theme-manager'],
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui'
@@ -11,8 +13,14 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  routeRules: {
-    '/': { prerender: true }
+  runtimeConfig: {
+    public: {
+      themeManager: {
+        creationTemplateId: 'test-theme',
+        creationOwnerType: 'user',
+        creationOwnerId: 'test-user'
+      }
+    }
   },
 
   compatibilityDate: '2026-06-30',

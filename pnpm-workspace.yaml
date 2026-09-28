@@ -1,4 +1,5 @@
 allowBuilds:
+  '@nuxt4-layers/theme-manager@git+https://github.com/nuxt4-layers/theme-manager.git#2349dc48c0257f18a2ccfa2765ca9059b30e762d': true
   '@parcel/watcher': false
   '@tailwindcss/oxide': false
   esbuild: false
