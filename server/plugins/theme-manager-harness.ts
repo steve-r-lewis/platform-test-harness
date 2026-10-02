@@ -1,3 +1,6 @@
+import {
+  completeThemeVocabulary
+} from '@nuxt4-layers/theme-manager/contracts'
 import type {
   JsonValue,
   ThemeActorContext,
@@ -22,7 +25,7 @@ const state = (value: string) => ({
   shadow: '0 4px 14px rgb(0 0 0 / 0.18)'
 })
 
-const testTheme: ThemeDefinition = {
+const sparseTestTheme: ThemeDefinition = {
   id: 'test-theme',
   name: 'Harness Test Theme',
   description: 'Seeded by the integration harness to exercise Theme Manager runtime application.',
@@ -54,6 +57,8 @@ const testTheme: ThemeDefinition = {
     }
   }
 }
+
+const testTheme = completeThemeVocabulary(sparseTestTheme)
 
 const values = new Map<string, JsonValue>([
   [testTheme.id, JSON.parse(JSON.stringify(testTheme)) as JsonValue]
