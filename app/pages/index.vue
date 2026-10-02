@@ -43,23 +43,33 @@ const checks = [
     <UCard>
       <template #header>
         <h2 class="text-xl font-semibold">
-          Semantic presentation probe
+          Tailwind presentation probe
         </h2>
       </template>
 
       <p class="mb-5 text-muted">
-        These controls consume Theme Manager's semantic presentation variables. Select the seeded
-        <strong>Harness Test Theme</strong> in the Theme Library and return here to observe runtime changes.
+        These controls consume Theme Manager through its Tailwind vocabulary. Select the seeded
+        <strong>Harness Test Theme</strong> in the Theme Library and return here to observe runtime changes
+        through the complete default → API → Tailwind cascade.
       </p>
 
       <div class="flex flex-wrap gap-4">
-        <button data-testid="theme-probe" class="theme-probe">
+        <button
+          data-testid="theme-probe"
+          class="rounded-lg px-5 py-3 bg-fill-primary-default text-pen-primary-default font-sans text-base font-bold shadow-sm-primary hover:bg-fill-primary-hover hover:text-pen-primary-hover"
+        >
           Default
         </button>
-        <button data-testid="theme-probe-hover" class="theme-probe theme-probe-hover">
+        <button
+          data-testid="theme-probe-hover"
+          class="rounded-lg px-5 py-3 bg-fill-primary-hover text-pen-primary-hover font-sans text-base font-bold shadow-sm-primary"
+        >
           Hover probe
         </button>
-        <div data-testid="theme-probe-effects" class="theme-probe-effects">
+        <div
+          data-testid="theme-probe-effects"
+          class="w-xs max-w-full rounded-xl p-4 shadow-md-primary font-serif text-lg text-shadow-sm-primary"
+        >
           Runtime presentation probe
         </div>
       </div>
@@ -74,33 +84,3 @@ const checks = [
     />
   </UContainer>
 </template>
-
-<style scoped>
-.theme-probe {
-  border-radius: var(--api-radius-lg);
-  padding: var(--api-spacing-3) var(--api-spacing-5);
-  background: var(--api-fill-primary-default);
-  color: var(--api-pen-primary-default);
-  font-family: var(--api-font-sans);
-  font-size: var(--api-text-base);
-  font-weight: var(--api-font-weight-bold);
-  box-shadow: var(--api-shadow-sm-primary);
-}
-
-.theme-probe-effects {
-  width: var(--api-spacing-xs);
-  max-width: 100%;
-  border-radius: var(--api-radius-xl);
-  padding: var(--api-spacing-4);
-  box-shadow: var(--api-shadow-md-primary);
-  font-family: var(--api-font-serif);
-  font-size: var(--api-text-lg);
-  text-shadow: var(--api-text-shadow-sm-primary);
-}
-
-.theme-probe:hover,
-.theme-probe-hover {
-  background: var(--api-fill-primary-hover);
-  color: var(--api-pen-primary-hover);
-}
-</style>
