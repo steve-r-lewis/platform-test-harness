@@ -12,13 +12,13 @@ test('harness composes Theme Manager and exposes runtime probes', async ({ page 
 test('seeded Theme exposes the complete presentation families', async ({ page }) => {
   await page.goto('/theme-manager/test-theme')
 
-  await page.getByRole('tab', { name: 'Spacing' }).click()
+  await page.getByRole('button', { name: 'Spacing' }).click()
   await expect(page.getByText('No spacing values are present in this Theme.')).toHaveCount(0)
 
-  await page.getByRole('tab', { name: 'Radii' }).click()
+  await page.getByRole('button', { name: 'Radii' }).click()
   await expect(page.getByText('No radii values are present in this Theme.')).toHaveCount(0)
 
-  await page.getByRole('tab', { name: 'Typography' }).click()
+  await page.getByRole('button', { name: 'Typography' }).click()
   await expect(page.getByText('No typography values are present in this Theme.')).toHaveCount(0)
 })
 
