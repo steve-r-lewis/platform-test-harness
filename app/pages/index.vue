@@ -53,12 +53,15 @@ const checks = [
       </p>
 
       <div class="flex flex-wrap gap-4">
-        <button class="theme-probe">
+        <button data-testid="theme-probe" class="theme-probe">
           Default
         </button>
-        <button class="theme-probe theme-probe-hover">
+        <button data-testid="theme-probe-hover" class="theme-probe theme-probe-hover">
           Hover probe
         </button>
+        <div data-testid="theme-probe-effects" class="theme-probe-effects">
+          Runtime presentation probe
+        </div>
       </div>
     </UCard>
 
@@ -74,11 +77,25 @@ const checks = [
 
 <style scoped>
 .theme-probe {
-  border-radius: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  border-radius: var(--api-radius-lg);
+  padding: var(--api-spacing-3) var(--api-spacing-5);
   background: var(--api-fill-primary-default);
   color: var(--api-pen-primary-default);
-  box-shadow: var(--api-fill-primary-shadow);
+  font-family: var(--api-font-sans);
+  font-size: var(--api-text-base);
+  font-weight: var(--api-font-weight-bold);
+  box-shadow: var(--api-shadow-sm-primary);
+}
+
+.theme-probe-effects {
+  width: var(--api-spacing-xs);
+  max-width: 100%;
+  border-radius: var(--api-radius-xl);
+  padding: var(--api-spacing-4);
+  box-shadow: var(--api-shadow-md-primary);
+  font-family: var(--api-font-serif);
+  font-size: var(--api-text-lg);
+  text-shadow: var(--api-text-shadow-sm-primary);
 }
 
 .theme-probe:hover,
