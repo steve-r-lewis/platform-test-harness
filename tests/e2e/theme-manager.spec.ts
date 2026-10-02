@@ -22,7 +22,7 @@ test('seeded Theme exposes the complete presentation families', async ({ page })
   await expect(page.getByText('No typography values are present in this Theme.')).toHaveCount(0)
 })
 
-test('runtime presentation variables drive the independent consumer probe', async ({ page }) => {
+test('Theme Manager runtime presentation drives a Tailwind consumer through the complete cascade', async ({ page }) => {
   await page.goto('/theme-manager/test-theme')
   await page.getByRole('button', { name: 'Light' }).click()
   await page.goto('/')
@@ -30,9 +30,14 @@ test('runtime presentation variables drive the independent consumer probe', asyn
   const probe = page.getByTestId('theme-probe')
   const effects = page.getByTestId('theme-probe-effects')
 
+  // These are Tailwind utilities in the harness, not direct --api-* consumers.
+  // Passing assertions therefore exercise theme-default.css → theme-api.css → tailwind-config.css.
   await expect(probe).toHaveCSS('border-radius', '8px')
+  await expect(probe).toHaveCSS('padding-top', '12px')
+  await expect(probe).toHaveCSS('padding-left', '20px')
   await expect(probe).toHaveCSS('font-size', '16px')
   await expect(probe).toHaveCSS('font-weight', '700')
   await expect(effects).toHaveCSS('border-radius', '16px')
+  await expect(effects).toHaveCSS('padding-top', '16px')
   await expect(effects).toHaveCSS('font-size', '18px')
 })
