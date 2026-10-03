@@ -21,14 +21,21 @@ useSeoMeta({
   <UApp>
     <UHeader>
       <template #left>
-        <NuxtLink to="/" class="font-semibold">
+        <NuxtLink
+          to="/"
+          class="font-semibold"
+        >
           Theme Manager Test Harness
         </NuxtLink>
       </template>
 
       <template #right>
         <UColorModeButton />
-        <UButton to="/theme-manager" label="Theme Manager" variant="subtle" />
+        <UButton
+          to="/theme-manager"
+          label="Theme Manager"
+          variant="subtle"
+        />
       </template>
     </UHeader>
 
