@@ -119,8 +119,7 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
           return [...sheet.cssRules]
             .filter(rule => rule.cssText.includes('.rounded-xl'))
             .map(rule => ({ href: sheet.href, cssText: rule.cssText }))
-        }
-        catch {
+        } catch {
           return []
         }
       })
