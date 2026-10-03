@@ -119,7 +119,7 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
       activeTheme: nuxt?.state?.['theme-manager:active-theme'],
       runtimeError: nuxt?.state?.['theme-manager:error'],
       roundedRules: [...document.styleSheets].flatMap((sheet) => {
-        const matches: Array<{ href: string | null; cssText: string }> = []
+        const matches: Array<{ href: string | null, cssText: string }> = []
         const visit = (rules: CSSRuleList) => {
           for (const rule of rules) {
             if (rule instanceof CSSStyleRule && rule.selectorText.includes('.rounded-xl')) {
