@@ -26,9 +26,9 @@ jobs:
 
       - name: Configure Theme Manager repository access
         env:
-          THEME_MANAGER_READ_TOKEN: ${{ secrets.THEME_MANAGER_READ_TOKEN }}
+          NUXT4_LAYERS_READ_TOKEN: ${{ secrets.NUXT4_LAYERS_READ_TOKEN }}
         run: |
-          git config --global url."https://x-access-token:${THEME_MANAGER_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${NUXT4_LAYERS_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
