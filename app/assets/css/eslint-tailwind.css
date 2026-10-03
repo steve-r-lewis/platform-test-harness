@@ -5,4 +5,4 @@
  * vocabulary into the harness. This file is not loaded by Nuxt at runtime.
  */
 @import './main.css';
-@import '@nuxt4-layers/theme-manager/assets/css/main.css';
+@import '../../../node_modules/@nuxt4-layers/theme-manager/assets/css/main.css';
