@@ -59,11 +59,11 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
   // Selecting the persisted Theme must activate the complete presentation,
   // including the edited non-colour value fixed at the PR #16 boundary.
   page.on('console', message => console.log('browser-console', message.type(), message.text()))
-  page.on('pageerror', error => console.log('browser-pageerror', error.message))
-  page.on('request', request => {
+  page.on('pageerror', (error) => console.log('browser-pageerror', error.message))
+  page.on('request', (request) => {
     if (request.url().includes('/api/themes')) console.log('browser-theme-request', request.method(), request.url())
   })
-  page.on('response', response => {
+  page.on('response', (response) => {
     if (response.url().includes('/api/themes')) console.log('browser-theme-response', response.status(), response.url())
   })
 
