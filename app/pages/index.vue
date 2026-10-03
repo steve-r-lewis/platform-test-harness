@@ -11,7 +11,10 @@ const checks = [
 <template>
   <UContainer class="py-12 space-y-10">
     <div class="space-y-4">
-      <UBadge label="Integration harness" variant="subtle" />
+      <UBadge
+        label="Integration harness"
+        variant="subtle"
+      />
       <h1 class="text-4xl font-bold">
         Theme Manager black-box test application
       </h1>
@@ -20,8 +23,17 @@ const checks = [
         persistence, identity and authorization adapters minimal so integration failures remain easy to isolate.
       </p>
       <div class="flex gap-3">
-        <UButton to="/theme-manager" label="Open Theme Library" icon="i-lucide-palette" />
-        <UButton to="/theme-manager/new" label="Create Theme" variant="outline" icon="i-lucide-plus" />
+        <UButton
+          to="/theme-manager"
+          label="Open Theme Library"
+          icon="i-lucide-palette"
+        />
+        <UButton
+          to="/theme-manager/new"
+          label="Create Theme"
+          variant="outline"
+          icon="i-lucide-plus"
+        />
       </div>
     </div>
 
@@ -33,8 +45,15 @@ const checks = [
       </template>
 
       <ul class="space-y-3">
-        <li v-for="check in checks" :key="check" class="flex items-center gap-2">
-          <UIcon name="i-lucide-circle-check" class="size-5 text-success" />
+        <li
+          v-for="check in checks"
+          :key="check"
+          class="flex items-center gap-2"
+        >
+          <UIcon
+            name="i-lucide-circle-check"
+            class="size-5 text-success"
+          />
           <span>{{ check }}</span>
         </li>
       </ul>
