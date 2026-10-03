@@ -41,3 +41,35 @@ test('Theme Manager runtime presentation drives a Tailwind consumer through the 
   await expect(effects).toHaveCSS('padding-top', '16px')
   await expect(effects).toHaveCSS('font-size', '18px')
 })
+
+
+test('editing a radius through Theme Manager UI persists and drives the Tailwind consumer', async ({ page }) => {
+  await page.goto('/theme-manager/test-theme')
+  await page.getByRole('button', { name: 'Radii' }).click()
+
+  const radius = page.getByLabel('xl', { exact: true })
+  await expect(radius).toHaveValue('16px')
+  await radius.fill('13px')
+
+  // The editor preview must already drive the consumer runtime before persistence.
+  await page.goto('/')
+  await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
+
+  // Return to the editor, persist the mutation through the public Save workflow,
+  // then select the saved Theme through the Theme Library.
+  await page.goto('/theme-manager/test-theme')
+  await page.getByRole('button', { name: 'Radii' }).click()
+  await page.getByLabel('xl', { exact: true }).fill('13px')
+  await page.getByRole('button', { name: 'Save' }).click()
+
+  await expect(page).toHaveURL(/\/theme-manager\/?$/)
+  await page.getByRole('button', { name: 'Use' }).click()
+  await page.goto('/')
+
+  await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
+
+  // Reload the editor from the repository to prove that the same value was persisted.
+  await page.goto('/theme-manager/test-theme')
+  await page.getByRole('button', { name: 'Radii' }).click()
+  await expect(page.getByLabel('xl', { exact: true })).toHaveValue('13px')
+})
