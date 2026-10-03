@@ -124,8 +124,7 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
           for (const rule of rules) {
             if (rule instanceof CSSStyleRule && rule.selectorText.includes('.rounded-xl')) {
               matches.push({ href: sheet.href, cssText: rule.cssText })
-            }
-            else if ('cssRules' in rule) {
+            } else if ('cssRules' in rule) {
               visit((rule as CSSGroupingRule).cssRules)
             }
           }
