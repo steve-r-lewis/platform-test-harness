@@ -58,6 +58,15 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
 
   // Selecting the persisted Theme must activate the complete presentation,
   // including the edited non-colour value fixed at the PR #16 boundary.
+  page.on('console', message => console.log('browser-console', message.type(), message.text()))
+  page.on('pageerror', error => console.log('browser-pageerror', error.message))
+  page.on('request', request => {
+    if (request.url().includes('/api/themes')) console.log('browser-theme-request', request.method(), request.url())
+  })
+  page.on('response', response => {
+    if (response.url().includes('/api/themes')) console.log('browser-theme-response', response.status(), response.url())
+  })
+
   await page.getByRole('button', { name: 'Use' }).click()
 
   const beforeNavigation = await page.evaluate(async () => {
@@ -85,7 +94,11 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
       inlineUiRadius: document.documentElement.style.getPropertyValue('--ui-radius-xl'),
       uiRadius: style.getPropertyValue('--ui-radius-xl'),
       apiRadius: style.getPropertyValue('--api-radius-xl'),
-      tailwindRadius: style.getPropertyValue('--radius-xl')
+      tailwindRadius: style.getPropertyValue('--radius-xl'),
+      inlineStyle: document.documentElement.getAttribute('style'),
+      resources: performance.getEntriesByType('resource')
+        .map(entry => entry.name)
+        .filter(name => name.includes('/api/themes'))
     }
   })
   console.log('runtime-radius-after-navigation', afterNavigation)
