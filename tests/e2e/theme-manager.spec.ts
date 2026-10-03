@@ -103,6 +103,21 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
   })
   console.log('runtime-radius-after-navigation', afterNavigation)
 
+  await page.waitForTimeout(2000)
+  const afterMount = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement)
+    const nuxt = (window as typeof window & { __NUXT__?: { state?: Record<string, unknown> } }).__NUXT__
+    return {
+      inlineUiRadius: document.documentElement.style.getPropertyValue('--ui-radius-xl'),
+      uiRadius: style.getPropertyValue('--ui-radius-xl'),
+      apiRadius: style.getPropertyValue('--api-radius-xl'),
+      inlineStyle: document.documentElement.getAttribute('style'),
+      activeTheme: nuxt?.state?.['theme-manager:active-theme'],
+      runtimeError: nuxt?.state?.['theme-manager:error']
+    }
+  })
+  console.log('runtime-radius-after-mount', afterMount)
+
   await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
 
   // Reload the editor from the repository to independently prove persistence.
