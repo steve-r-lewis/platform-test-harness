@@ -59,7 +59,37 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
   // Selecting the persisted Theme must activate the complete presentation,
   // including the edited non-colour value fixed at the PR #16 boundary.
   await page.getByRole('button', { name: 'Use' }).click()
+
+  const beforeNavigation = await page.evaluate(async () => {
+    const theme = await fetch('/api/themes/test-theme').then(response => response.json())
+    const style = getComputedStyle(document.documentElement)
+    return {
+      persistedRadius: theme.presentation?.radii?.xl,
+      cookie: document.cookie,
+      inlineUiRadius: document.documentElement.style.getPropertyValue('--ui-radius-xl'),
+      uiRadius: style.getPropertyValue('--ui-radius-xl'),
+      apiRadius: style.getPropertyValue('--api-radius-xl'),
+      tailwindRadius: style.getPropertyValue('--radius-xl')
+    }
+  })
+  console.log('runtime-radius-before-navigation', beforeNavigation)
+
   await page.goto('/')
+
+  const afterNavigation = await page.evaluate(async () => {
+    const theme = await fetch('/api/themes/test-theme').then(response => response.json())
+    const style = getComputedStyle(document.documentElement)
+    return {
+      persistedRadius: theme.presentation?.radii?.xl,
+      cookie: document.cookie,
+      inlineUiRadius: document.documentElement.style.getPropertyValue('--ui-radius-xl'),
+      uiRadius: style.getPropertyValue('--ui-radius-xl'),
+      apiRadius: style.getPropertyValue('--api-radius-xl'),
+      tailwindRadius: style.getPropertyValue('--radius-xl')
+    }
+  })
+  console.log('runtime-radius-after-navigation', afterNavigation)
+
   await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
 
   // Reload the editor from the repository to independently prove persistence.
