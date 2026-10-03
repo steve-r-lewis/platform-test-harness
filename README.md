@@ -1,64 +1,42 @@
-# Nuxt Starter Template
+# Platform Test Harness
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+Independent Nuxt 4 consumer and integration proving ground for the reusable layers developed under `nuxt4-layers`.
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+The harness deliberately remains under the `steve-r-lewis` owner so that layers are exercised across the same ownership boundary expected of real consuming applications.
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+## Verification model
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+The harness provides three levels of verification:
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
+- **Layer isolation** — exercise each layer through its public contracts and observable behaviour.
+- **Layer composition** — detect conflicts between independently developed layers, including CSS vocabulary, middleware/plugin ordering, routes, runtime configuration, ports and dependencies.
+- **Platform integration** — preserve proven combinations of layer versions before adoption by real applications and deployment channels.
 
-## Quick Start
+Layer dependencies are pinned to exact Git commits. CI installs with a frozen lockfile so a passing run identifies a reproducible composition.
 
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
-```
+## Current baseline
 
-## Deploy your own
+Theme Manager is the first integrated layer. Its existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
+Current Theme Manager baseline:
 
-## Setup
+`aa6792ca4418000c21b01c93a90da6c4b44e9e12`
 
-Make sure to install the dependencies:
+## Commands
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
+pnpm lint
+pnpm typecheck
+pnpm test:e2e
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+For local development:
 
 ```bash
 pnpm dev
 ```
 
-## Production
+## Repository role
 
-Build the application for production:
-
-```bash
-pnpm build
-```
-
-Locally preview production build:
-
-```bash
-pnpm preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-## Renovate integration
-
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+This repository is a test consumer, not a reusable layer. Product behaviour and contracts remain owned by their respective layer repositories. Harness-specific adapters and probes exist only to supply host responsibilities and verify public behaviour.
