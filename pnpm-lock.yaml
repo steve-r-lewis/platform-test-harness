@@ -177,7 +177,7 @@ importers:
         version: 4.11.2(93788a16d5f7d73ab177980e5e857990)
       '@nuxt4-layers/theme-manager':
         specifier: github:nuxt4-layers/theme-manager
-        version: git+https://github.com/nuxt4-layers/theme-manager.git#27c2d6a1a65152895c387e54e32807cd945fbea5
+        version: git+https://github.com/nuxt4-layers/theme-manager.git#aa6792ca4418000c21b01c93a90da6c4b44e9e12
       nuxt:
         specifier: ^4.5.2
         version: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1)
@@ -1098,8 +1098,8 @@ packages:
       rollup-plugin-visualizer:
         optional: true
 
-  '@nuxt4-layers/theme-manager@git+https://github.com/nuxt4-layers/theme-manager.git#27c2d6a1a65152895c387e54e32807cd945fbea5':
-    resolution: {commit: 27c2d6a1a65152895c387e54e32807cd945fbea5, repo: https://github.com/nuxt4-layers/theme-manager.git, type: git}
+  '@nuxt4-layers/theme-manager@git+https://github.com/nuxt4-layers/theme-manager.git#aa6792ca4418000c21b01c93a90da6c4b44e9e12':
+    resolution: {commit: aa6792ca4418000c21b01c93a90da6c4b44e9e12, repo: https://github.com/nuxt4-layers/theme-manager.git, type: git}
     version: 0.1.0
     engines: {node: '>=22'}
 
@@ -6632,7 +6632,7 @@ snapshots:
       - webpack
       - yaml
 
-  '@nuxt4-layers/theme-manager@git+https://github.com/nuxt4-layers/theme-manager.git#27c2d6a1a65152895c387e54e32807cd945fbea5': {}
+  '@nuxt4-layers/theme-manager@git+https://github.com/nuxt4-layers/theme-manager.git#aa6792ca4418000c21b01c93a90da6c4b44e9e12': {}
 
   '@nuxtjs/color-mode@4.0.1(magic-string@1.4.2)(magicast@0.5.5)(rolldown@1.2.11)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.11)(rollup@4.63.5)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))':
     dependencies:
