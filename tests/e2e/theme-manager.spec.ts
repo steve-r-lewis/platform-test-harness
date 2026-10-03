@@ -47,8 +47,10 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
   await page.getByRole('button', { name: 'Radii' }).click()
 
   const radius = page.getByLabel('xl', { exact: true })
-  await expect(radius).toHaveValue('16px')
+  // The harness repository survives Playwright retries, so set the target value
+  // idempotently rather than assuming a pristine value on every attempt.
   await radius.fill('13px')
+  await expect(radius).toHaveValue('13px')
 
   // Persist through Theme Manager's public editor workflow.
   await page.getByRole('button', { name: 'Save' }).click()
