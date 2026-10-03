@@ -176,7 +176,7 @@ importers:
         specifier: ^4.11.1
         version: 4.11.2(93788a16d5f7d73ab177980e5e857990)
       '@nuxt4-layers/theme-manager':
-        specifier: github:nuxt4-layers/theme-manager
+        specifier: github:nuxt4-layers/theme-manager#aa6792ca4418000c21b01c93a90da6c4b44e9e12
         version: git+https://github.com/nuxt4-layers/theme-manager.git#aa6792ca4418000c21b01c93a90da6c4b44e9e12
       nuxt:
         specifier: ^4.5.2
