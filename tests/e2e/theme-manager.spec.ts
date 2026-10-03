@@ -113,7 +113,17 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
       apiRadius: style.getPropertyValue('--api-radius-xl'),
       inlineStyle: document.documentElement.getAttribute('style'),
       activeTheme: nuxt?.state?.['theme-manager:active-theme'],
-      runtimeError: nuxt?.state?.['theme-manager:error']
+      runtimeError: nuxt?.state?.['theme-manager:error'],
+      roundedRules: [...document.styleSheets].flatMap((sheet) => {
+        try {
+          return [...sheet.cssRules]
+            .filter(rule => rule.cssText.includes('.rounded-xl'))
+            .map(rule => ({ href: sheet.href, cssText: rule.cssText }))
+        }
+        catch {
+          return []
+        }
+      })
     }
   })
   console.log('runtime-radius-after-mount', afterMount)
