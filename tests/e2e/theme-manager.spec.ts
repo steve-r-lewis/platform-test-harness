@@ -42,8 +42,6 @@ test('Theme Manager runtime presentation drives a Tailwind consumer through the 
   await expect(effects).toHaveCSS('font-size', '18px')
 })
 
-
-
 test('editing a radius through Theme Manager UI persists and drives the Tailwind consumer', async ({ page }) => {
   await page.goto('/theme-manager/test-theme')
   await page.getByRole('button', { name: 'Radii' }).click()
