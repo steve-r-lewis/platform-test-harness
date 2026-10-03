@@ -24,6 +24,12 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
 
+      - name: Configure Theme Manager repository access
+        env:
+          NUXT4_LAYERS_READ_TOKEN: ${{ secrets.NUXT4_LAYERS_READ_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${NUXT4_LAYERS_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -32,3 +38,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm run typecheck
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E
+        run: pnpm run test:e2e

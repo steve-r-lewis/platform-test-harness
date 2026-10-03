@@ -8,7 +8,7 @@ export default withNuxt(
   {
     settings: {
       'better-tailwindcss': {
-        entryPoint: 'app/assets/css/main.css',
+        entryPoint: 'app/assets/css/eslint-tailwind.css',
         attributes: [
           ...getDefaultAttributes(),
           ['^v-bind:ui$', [{ match: 'objectValues' }]]

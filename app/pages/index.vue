@@ -11,7 +11,10 @@ const checks = [
 <template>
   <UContainer class="py-12 space-y-10">
     <div class="space-y-4">
-      <UBadge label="Integration harness" variant="subtle" />
+      <UBadge
+        label="Integration harness"
+        variant="subtle"
+      />
       <h1 class="text-4xl font-bold">
         Theme Manager black-box test application
       </h1>
@@ -20,8 +23,17 @@ const checks = [
         persistence, identity and authorization adapters minimal so integration failures remain easy to isolate.
       </p>
       <div class="flex gap-3">
-        <UButton to="/theme-manager" label="Open Theme Library" icon="i-lucide-palette" />
-        <UButton to="/theme-manager/new" label="Create Theme" variant="outline" icon="i-lucide-plus" />
+        <UButton
+          to="/theme-manager"
+          label="Open Theme Library"
+          icon="i-lucide-palette"
+        />
+        <UButton
+          to="/theme-manager/new"
+          label="Create Theme"
+          variant="outline"
+          icon="i-lucide-plus"
+        />
       </div>
     </div>
 
@@ -33,8 +45,15 @@ const checks = [
       </template>
 
       <ul class="space-y-3">
-        <li v-for="check in checks" :key="check" class="flex items-center gap-2">
-          <UIcon name="i-lucide-circle-check" class="size-5 text-success" />
+        <li
+          v-for="check in checks"
+          :key="check"
+          class="flex items-center gap-2"
+        >
+          <UIcon
+            name="i-lucide-circle-check"
+            class="size-5 text-success"
+          />
           <span>{{ check }}</span>
         </li>
       </ul>
@@ -43,22 +62,35 @@ const checks = [
     <UCard>
       <template #header>
         <h2 class="text-xl font-semibold">
-          Semantic presentation probe
+          Tailwind presentation probe
         </h2>
       </template>
 
       <p class="mb-5 text-muted">
-        These controls consume Theme Manager's semantic presentation variables. Select the seeded
-        <strong>Harness Test Theme</strong> in the Theme Library and return here to observe runtime changes.
+        These controls consume Theme Manager through its Tailwind vocabulary. Select the seeded
+        <strong>Harness Test Theme</strong> in the Theme Library and return here to observe runtime changes
+        through the complete default → API → Tailwind cascade.
       </p>
 
       <div class="flex flex-wrap gap-4">
-        <button class="theme-probe">
+        <button
+          data-testid="theme-probe"
+          class="rounded-lg px-5 py-3 bg-fill-primary-default text-pen-primary-default font-sans text-base font-bold shadow-sm-primary hover:bg-fill-primary-hover hover:text-pen-primary-hover"
+        >
           Default
         </button>
-        <button class="theme-probe theme-probe-hover">
+        <button
+          data-testid="theme-probe-hover"
+          class="rounded-lg px-5 py-3 bg-fill-primary-hover text-pen-primary-hover font-sans text-base font-bold shadow-sm-primary"
+        >
           Hover probe
         </button>
+        <div
+          data-testid="theme-probe-effects"
+          class="w-xs max-w-full rounded-xl p-4 shadow-md-primary font-serif text-lg text-shadow-sm-primary"
+        >
+          Runtime presentation probe
+        </div>
       </div>
     </UCard>
 
@@ -71,19 +103,3 @@ const checks = [
     />
   </UContainer>
 </template>
-
-<style scoped>
-.theme-probe {
-  border-radius: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: var(--api-fill-primary-default);
-  color: var(--api-pen-primary-default);
-  box-shadow: var(--api-fill-primary-shadow);
-}
-
-.theme-probe:hover,
-.theme-probe-hover {
-  background: var(--api-fill-primary-hover);
-  color: var(--api-pen-primary-hover);
-}
-</style>

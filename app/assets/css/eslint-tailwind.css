@@ -1,0 +1,8 @@
+/*
+ * ESLint-only Tailwind composition entry point.
+ *
+ * Mirrors the consumer's composed CSS authorities without duplicating either
+ * vocabulary into the harness. This file is not loaded by Nuxt at runtime.
+ */
+@import './main.css';
+@import '../../../node_modules/@nuxt4-layers/theme-manager/assets/css/main.css';
