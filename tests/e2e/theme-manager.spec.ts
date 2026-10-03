@@ -42,7 +42,6 @@ test('Theme Manager runtime presentation drives a Tailwind consumer through the 
   await expect(effects).toHaveCSS('font-size', '18px')
 })
 
-
 test('saved runtime Theme survives a fresh consumer navigation', async ({ page }) => {
   await page.goto('/theme-manager/test-theme')
 
