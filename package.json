@@ -1,5 +1,5 @@
 {
-  "name": "theme_manager_test_app",
+  "name": "platform-test-harness",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,7 +16,7 @@
     "@iconify-json/lucide": "^1.2.134",
     "@iconify-json/simple-icons": "^1.2.96",
     "@nuxt/ui": "^4.11.1",
-    "@nuxt4-layers/theme-manager": "github:nuxt4-layers/theme-manager",
+    "@nuxt4-layers/theme-manager": "github:nuxt4-layers/theme-manager#aa6792ca4418000c21b01c93a90da6c4b44e9e12",
     "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.3"
   },
