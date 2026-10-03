@@ -41,3 +41,18 @@ test('Theme Manager runtime presentation drives a Tailwind consumer through the 
   await expect(effects).toHaveCSS('padding-top', '16px')
   await expect(effects).toHaveCSS('font-size', '18px')
 })
+
+
+test('saved runtime Theme survives a fresh consumer navigation', async ({ page }) => {
+  await page.goto('/theme-manager/test-theme')
+
+  await page.getByRole('button', { name: 'Radii' }).click()
+  const xlRadius = page.getByLabel('xl')
+  await xlRadius.fill('13px')
+  await page.getByRole('button', { name: 'Save' }).click()
+  await page.getByRole('button', { name: 'Use' }).click()
+
+  await page.goto('/')
+
+  await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
+})
