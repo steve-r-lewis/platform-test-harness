@@ -106,19 +106,33 @@ test('editing a radius through Theme Manager UI persists and drives the Tailwind
   await page.waitForTimeout(2000)
   const afterMount = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement)
+    const probeStyle = getComputedStyle(document.querySelector('[data-testid="theme-probe-effects"]')!)
     const nuxt = (window as typeof window & { __NUXT__?: { state?: Record<string, unknown> } }).__NUXT__
     return {
       inlineUiRadius: document.documentElement.style.getPropertyValue('--ui-radius-xl'),
       uiRadius: style.getPropertyValue('--ui-radius-xl'),
       apiRadius: style.getPropertyValue('--api-radius-xl'),
+      probeApiRadius: probeStyle.getPropertyValue('--api-radius-xl'),
+      probeUiRadius: probeStyle.getPropertyValue('--ui-radius-xl'),
+      probeBorderRadius: probeStyle.borderRadius,
       inlineStyle: document.documentElement.getAttribute('style'),
       activeTheme: nuxt?.state?.['theme-manager:active-theme'],
       runtimeError: nuxt?.state?.['theme-manager:error'],
       roundedRules: [...document.styleSheets].flatMap((sheet) => {
+        const matches: Array<{ href: string | null; cssText: string }> = []
+        const visit = (rules: CSSRuleList) => {
+          for (const rule of rules) {
+            if (rule instanceof CSSStyleRule && rule.selectorText.includes('.rounded-xl')) {
+              matches.push({ href: sheet.href, cssText: rule.cssText })
+            }
+            else if ('cssRules' in rule) {
+              visit((rule as CSSGroupingRule).cssRules)
+            }
+          }
+        }
         try {
-          return [...sheet.cssRules]
-            .filter(rule => rule.cssText.includes('.rounded-xl'))
-            .map(rule => ({ href: sheet.href, cssText: rule.cssText }))
+          visit(sheet.cssRules)
+          return matches
         } catch {
           return []
         }
