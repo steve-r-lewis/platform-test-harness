@@ -16,13 +16,13 @@ test('seeded Theme exposes the complete presentation families', async ({ page })
   await signInAtAal2(page)
   await page.goto('/theme-manager/test-theme')
 
-  await page.getByRole('button', { name: 'Spacing' }).click()
+  await page.getByRole('tab', { name: 'spacing' }).click()
   await expect(page.getByText('No spacing values are present in this Theme.')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Radii' }).click()
+  await page.getByRole('tab', { name: 'radii' }).click()
   await expect(page.getByText('No radii values are present in this Theme.')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Typography' }).click()
+  await page.getByRole('tab', { name: 'typography' }).click()
   await expect(page.getByText('No typography values are present in this Theme.')).toHaveCount(0)
 })
 
@@ -51,7 +51,7 @@ test('saved runtime Theme survives a fresh consumer navigation', async ({ page }
   await signInAtAal2(page)
   await page.goto('/theme-manager/test-theme')
 
-  await page.getByRole('button', { name: 'Radii' }).click()
+  await page.getByRole('tab', { name: 'radii' }).click()
   const xlRadius = page.getByLabel('xl')
   await xlRadius.fill('13px')
   await page.getByRole('button', { name: 'Save' }).click()

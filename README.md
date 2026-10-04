@@ -18,8 +18,8 @@ Layer dependencies are pinned to exact Git commits. CI installs with a frozen lo
 
 | Layer | Commit |
 |---|---|
-| Theme Manager | `beb8b24ea663ecf88c12685a77a93ca0a9fe12f8` |
-| Authentication | `40def423e2f299ce88455fa1139e03e6a5cb2f4c` |
+| Theme Manager | `902ed58140452f5a0c3fbd22f3e9d2481ed99655` |
+| Authentication | `5d18dfcaeb4e18e830a978e7c326bb3c30e6592d` |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
@@ -34,7 +34,7 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Identity (principal → Theme actor) | A principal at the policy's required level (aal2) becomes the Theme actor; anything else is anonymous (`server/plugins/theme-manager-harness.ts`) |
 | Authorization (interim) | Anyone may read and use Themes; only signed-in actors may change them |
 | Routing | Theme administration requires sign-in (`app/middleware/theme-administration.global.ts`); layer pages own their `<main>` landmark (`app/app.vue`) |
-| Presentation | `app/assets/css/layers.css` recompiles Theme Manager's vocabulary with the Authentication layer's sources, plus a two-token dark-mode palette correction until Theme Manager fixes it |
+| Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
 
 `tests/e2e/authentication.spec.ts` covers composition conflicts (routes, styling beside Nuxt UI, landmarks, headers, WCAG 2.2 AA in both modes), the principal-to-actor mapping (anonymous, aal1 and signed-out sessions cannot change Themes), and negative paths across the boundary (cross-origin requests, forged session cookies, secrets in events).
 
