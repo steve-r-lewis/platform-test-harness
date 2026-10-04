@@ -1,0 +1,5 @@
+# Every change needs the maintainer's review; workflows and ownership most of all.
+*                   @steve-r-lewis
+/.github/           @steve-r-lewis
+/pnpm-lock.yaml     @steve-r-lewis
+/package.json       @steve-r-lewis
