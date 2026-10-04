@@ -157,7 +157,7 @@ logs
 # Vitest
 **/.vitest/
 **/vitest.*.json
-coverage/                # Coverage output (Vitest, Jest, etc.)
+**/coverage/                # Coverage output (Vitest, Jest, etc.)
 
 # Playwright test artefacts
 **/test-results/
@@ -169,7 +169,6 @@ coverage/                # Coverage output (Vitest, Jest, etc.)
 # =============================================
 docs/.vitepress/dist
 docs/.vitepress/cache
-
 
 # Local development playgrounds / scratch apps
 **/playground/dist/
