@@ -8,6 +8,23 @@ jobs:
   ci:
     runs-on: ${{ matrix.os }}
 
+    services:
+      postgres:
+        # Disposable database for the Authentication layer; never a hosted one.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      HARNESS_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
+
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -16,6 +33,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Leave no GITHUB_TOKEN credentials configured: they are scoped to this
+          # repository and must not be offered when fetching the private layers.
+          persist-credentials: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -30,7 +51,19 @@ jobs:
         env:
           NUXT4_LAYERS_READ_TOKEN: ${{ secrets.NUXT4_LAYERS_READ_TOKEN }}
         run: |
-          git config --global url."https://x-access-token:${NUXT4_LAYERS_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+          if [ -z "$NUXT4_LAYERS_READ_TOKEN" ]; then
+            echo "::error::The NUXT4_LAYERS_READ_TOKEN repository secret is not set."
+            exit 1
+          fi
+          # Scoped to the nuxt4-layers organisation only.
+          git config --global url."https://x-access-token:${NUXT4_LAYERS_READ_TOKEN}@github.com/nuxt4-layers/".insteadOf "https://github.com/nuxt4-layers/"
+          # Fail early, naming any private layer the token cannot read.
+          for repo in theme-manager authentication; do
+            if ! git ls-remote --exit-code "https://github.com/nuxt4-layers/${repo}.git" HEAD > /dev/null; then
+              echo "::error::NUXT4_LAYERS_READ_TOKEN cannot read nuxt4-layers/${repo}."
+              exit 1
+            fi
+          done
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

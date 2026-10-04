@@ -1,0 +1,24 @@
+/*
+ * Layer presentation entry point.
+ *
+ * Theme Manager compiles its semantic vocabulary from the consumer's own
+ * sources only, so utilities used inside other layers (which live in
+ * node_modules) are never generated. This entry recompiles the vocabulary
+ * with the authentication layer's sources added, as its composition contract
+ * prescribes. Nuxt UI keeps its own compilation in main.css.
+ */
+@import "@nuxt4-layers/theme-manager/presentation.css";
+@import "@nuxt4-layers/authentication/tailwind.css";
+
+/*
+ * Host palette correction. Theme Manager's default theme (beb8b24) pairs two
+ * dark-mode tokens below WCAG 2.2 AA against fill-base: pen-link (1.8:1) and
+ * edge-accent, the focus indicator (2.3:1). Remove once fixed upstream.
+ * `html:root` outranks the layer's own `:root` declarations, which Nuxt loads
+ * after the host's stylesheets.
+ */
+html:root {
+  --ui-pen-link-default-dark: #a5c6ad;
+  --ui-pen-link-hover-dark: #b6d3bd;
+  --ui-edge-accent-default-dark: #94b99d;
+}

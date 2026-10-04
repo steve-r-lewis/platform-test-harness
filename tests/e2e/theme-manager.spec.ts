@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test'
+import { signInAtAal2 } from './support/authentication'
+
+// Theme administration is behind sign-in in this harness (see authentication.spec.ts).
 
 test('harness composes Theme Manager and exposes runtime probes', async ({ page }) => {
   await page.goto('/')
@@ -10,6 +13,7 @@ test('harness composes Theme Manager and exposes runtime probes', async ({ page 
 })
 
 test('seeded Theme exposes the complete presentation families', async ({ page }) => {
+  await signInAtAal2(page)
   await page.goto('/theme-manager/test-theme')
 
   await page.getByRole('button', { name: 'Spacing' }).click()
@@ -23,6 +27,7 @@ test('seeded Theme exposes the complete presentation families', async ({ page })
 })
 
 test('Theme Manager runtime presentation drives a Tailwind consumer through the complete cascade', async ({ page }) => {
+  await signInAtAal2(page)
   await page.goto('/theme-manager/test-theme')
   await page.getByRole('button', { name: 'Light' }).click()
   await page.goto('/')
@@ -43,6 +48,7 @@ test('Theme Manager runtime presentation drives a Tailwind consumer through the 
 })
 
 test('saved runtime Theme survives a fresh consumer navigation', async ({ page }) => {
+  await signInAtAal2(page)
   await page.goto('/theme-manager/test-theme')
 
   await page.getByRole('button', { name: 'Radii' }).click()
