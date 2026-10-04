@@ -1,24 +1,3 @@
-
-
-
-
-
-# Playwright test artefacts
-test-results/
-playwright-report/
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ============================================================================
 # .gitignore: Nuxt 4 Monorepo (PNPM Workspace) Starter Template
 # ----------------------------------------------------------------------------
@@ -76,7 +55,6 @@ playwright-report/
 **/yarn-error.log*
 **/pnpm-debug.log*
 
-# ---
 
 # =============================================
 # 2. Environment & Secrets
@@ -92,7 +70,6 @@ playwright-report/
 # EXAMPLES / TEMPLATES (Keep tracked for onboarding [cite: 4])
 !**/.env.example
 
-# ---
 
 # =============================================
 # 3. System / OS Noise
@@ -110,7 +87,6 @@ playwright-report/
 # 'Unix-like' OS specific
 **/lost+found/          # Linux FS recovery artifacts
 
-# ---
 
 # =============================================
 # 4. Temporary & Backup Files
@@ -135,7 +111,6 @@ logs
 # Legacy / temporary files (e.g., deleted during refactoring)
 # **/*.old # Generalising from nuxt.config.ts [cite: 16]
 
-# ---
 
 # =============================================
 # 5. Nuxt / Nitro / Vite Build & Cache Artefacts
@@ -174,7 +149,6 @@ logs
 # Temporary exclude to ensure that private datastore does not pollute the Git repository[cite: 16].
 # nuxt.config.ts
 
-# ---
 
 # =============================================
 # 6. Testing, Tooling, QA
@@ -184,6 +158,10 @@ logs
 **/.vitest/
 **/vitest.*.json
 coverage/                # Coverage output (Vitest, Jest, etc.)
+
+# Playwright test artefacts
+**/test-results/
+**/playwright-report/
 
 
 # =============================================
@@ -210,7 +188,6 @@ cypress/videos/
 # Powershell Generated Layer Documentation
 powershell/output/
 
-# ---
 
 # =============================================
 # 8. Backend / Hosting Providers
@@ -235,7 +212,6 @@ powershell/output/
 # Vercel project-manager state
 **/.vercel/
 
-# ---
 
 # =============================================
 # 9. IDE / Editor Project Metadata
@@ -255,7 +231,6 @@ qodana.yaml                   # JetBrains Qodana CI config (ignore local)
 !**/.vscode/settings.json.example
 !**/.vscode/extensions.json.example
 
-# ---
 
 # =============================================
 # 10. TypeScript, Build Info & Transpiled Outputs
@@ -264,7 +239,6 @@ qodana.yaml                   # JetBrains Qodana CI config (ignore local)
 **/out-tsc/                  # tsc output (Angular-style or tooling builds)
 **/*.tsbuildinfo             # Incremental TS build state
 
-# ---
 
 # =============================================
 # 11. Project-Specific Runtime & Dev Data
@@ -277,6 +251,7 @@ qodana.yaml                   # JetBrains Qodana CI config (ignore local)
 **/development/              # Local development scratch trees
 **/sandbox*/                 # Local scratch (dup with Testing block ok for safety)
 # **/backend-mock-datastore-stores/  # Local backend datastore mockup.
+
 
 # ============================================================================
 # End of File
