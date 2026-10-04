@@ -1,4 +1,10 @@
 <script setup lang="ts">
+// Layer pages that supply their own <main> landmark (the Authentication
+// layer's pages are named `authentication-*`) render inside a plain
+// container, so each page has exactly one main landmark.
+const route = useRoute()
+const pageOwnsMain = computed(() => String(route.name ?? '').startsWith('authentication-'))
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -39,7 +45,7 @@ useSeoMeta({
       </template>
     </UHeader>
 
-    <UMain>
+    <UMain :as="pageOwnsMain ? 'div' : 'main'">
       <NuxtPage />
     </UMain>
   </UApp>

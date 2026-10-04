@@ -8,6 +8,23 @@ jobs:
   ci:
     runs-on: ${{ matrix.os }}
 
+    services:
+      postgres:
+        # Disposable database for the Authentication layer; never a hosted one.
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      HARNESS_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
+
     strategy:
       matrix:
         os: [ubuntu-latest]

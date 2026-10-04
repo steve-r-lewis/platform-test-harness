@@ -9,11 +9,10 @@ import type {
   ThemeRepository
 } from '@nuxt4-layers/theme-manager/contracts'
 
-const actor: ThemeActorContext = {
-  actorId: 'test-user',
-  groupIds: ['test-group'],
-  organisationIds: ['test-organisation']
-}
+// The seeded Theme's owner. Signed-in actors are principal ids from Authentication.
+const seedOwnerId = 'test-user'
+
+const anonymous: ThemeActorContext = { actorId: null, groupIds: [], organisationIds: [] }
 
 const state = (value: string) => ({
   default: value,
@@ -33,7 +32,7 @@ const sparseTestTheme: ThemeDefinition = {
   schemaVersion: '1',
   ownership: {
     ownerType: 'user',
-    ownerId: actor.actorId!
+    ownerId: seedOwnerId
   },
   visibility: 'private',
   lifecycle: 'draft',
@@ -88,9 +87,37 @@ const repository: ThemeRepository = {
   }
 }
 
+/**
+ * Identity adapter (harness-only): Authentication publishes who has signed in;
+ * Theme Manager receives an opaque actor. A principal below the required
+ * assurance level (for example password only, before the second factor) is
+ * anonymous here. No groups or organisations until an Identity layer exists.
+ */
+async function actorForCurrentRequest(): Promise<ThemeActorContext> {
+  let event
+  try {
+    event = useEvent()
+  } catch {
+    return anonymous // outside a request: fail closed
+  }
+  try {
+    // Throws 401 when signed out and 403 below the policy's required level.
+    const principal = await requireAuthenticatedPrincipal(event)
+    return { actorId: principal.principalId, groupIds: [], organisationIds: [] }
+  } catch {
+    return anonymous
+  }
+}
+
+/**
+ * Interim Authorization adapter until an Authorization layer is composed:
+ * anyone may read and use Themes; only signed-in actors may change them.
+ */
+const anonymousActions = new Set(['theme.read', 'theme.use'])
 const authorization = {
   async isAllowed(request: ThemeAuthorizationRequest) {
-    return request.actor.actorId === actor.actorId
+    if (request.actor.actorId) return true
+    return anonymousActions.has(request.action)
   }
 }
 
@@ -100,7 +127,7 @@ export default defineNitroPlugin(() => {
   })
 
   provideThemeActorContext({
-    getActorContext: async () => actor
+    getActorContext: actorForCurrentRequest
   })
 
   provideThemeAuthorization(authorization)

@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  extends: ['@nuxt4-layers/theme-manager'],
+  // Peers: neither layer extends the other. The harness is the composition root.
+  extends: ['@nuxt4-layers/theme-manager', '@nuxt4-layers/authentication'],
 
   modules: [
     '@nuxt/eslint',
@@ -11,7 +12,7 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', '~/assets/css/layers.css'],
 
   runtimeConfig: {
     public: {
@@ -24,6 +25,12 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2026-06-30',
+
+  nitro: {
+    // Lets the Theme Manager actor adapter read the current request (useEvent),
+    // since ThemeActorContextProvider.getActorContext() receives no event.
+    experimental: { asyncContext: true }
+  },
 
   eslint: {
     config: {
