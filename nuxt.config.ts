@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     enabled: true
   },
 
-  css: ['~/assets/css/main.css', '~/assets/css/layers.css'],
+  css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
     public: {
