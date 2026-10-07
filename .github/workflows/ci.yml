@@ -14,9 +14,10 @@ concurrency:
 
 jobs:
   ci:
-    # The check the master ruleset requires, as in the layer repositories.
+    # The check the master ruleset requires, as in the layer repositories. No matrix:
+    # GitHub appends matrix values to the name, which the ruleset would not match.
     name: quality
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     services:
@@ -36,10 +37,6 @@ jobs:
     env:
       HARNESS_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: [22]
 
     steps:
       - name: Checkout
@@ -55,7 +52,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
           cache: pnpm
       
       - name: Install dependencies
