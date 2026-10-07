@@ -1,4 +1,3 @@
-import pg from 'pg'
 import type { AuthenticationEvent, AuthenticationMessage } from '@nuxt4-layers/authentication/contracts'
 
 /**
@@ -22,9 +21,9 @@ export const harnessTestMode = process.env.HARNESS_TEST_MODE === '1'
 export const harnessRecorder: HarnessRecorder = { messages: [], events: [] }
 
 export default defineNitroPlugin(() => {
-  const connectionString = process.env.HARNESS_DATABASE_URL
-  if (connectionString) {
-    provideAuthenticationDatabase({ dialect: 'postgres', pool: new pg.Pool({ connectionString, max: 5 }) })
+  const pool = harnessDatabase()
+  if (pool) {
+    provideAuthenticationDatabase({ dialect: 'postgres', pool })
     migrateAuthenticationDatabase()
   }
 

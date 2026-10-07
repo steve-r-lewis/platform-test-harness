@@ -1,3 +1,4 @@
+import type pg from 'pg'
 import {
   completeThemeVocabulary
 } from '@nuxt4-layers/theme-manager/contracts'
@@ -59,31 +60,40 @@ const sparseTestTheme: ThemeDefinition = {
 
 const testTheme = completeThemeVocabulary(sparseTestTheme)
 
-const values = new Map<string, JsonValue>([
-  [testTheme.id, JSON.parse(JSON.stringify(testTheme)) as JsonValue]
-])
+/**
+ * Theme storage adapter (harness-only): one JSONB row per Theme in the same
+ * disposable database as Authentication. The table is created on first use and
+ * the seeded Theme inserted if absent. Theme Manager validates every value it
+ * reads, so the adapter stores and returns JSON only.
+ */
+function postgresThemeRepository(pool: pg.Pool): ThemeRepository {
+  const ready = (async () => {
+    await pool.query('create table if not exists harness_themes (id text primary key, value jsonb not null)')
+    await pool.query('insert into harness_themes (id, value) values ($1, $2) on conflict (id) do nothing', [testTheme.id, JSON.stringify(testTheme)])
+  })()
 
-const repository: ThemeRepository = {
-  async findById(id) {
-    return values.get(id) ?? null
-  },
-  async list() {
-    return [...values.values()]
-  },
-  async save(value) {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      throw new TypeError('Harness repository expected a serialized Theme Definition object.')
+  return {
+    async findById(id) {
+      await ready
+      const { rows } = await pool.query<{ value: JsonValue }>('select value from harness_themes where id = $1', [id])
+      return rows[0]?.value ?? null
+    },
+    async list() {
+      await ready
+      const { rows } = await pool.query<{ value: JsonValue }>('select value from harness_themes order by id')
+      return rows.map(row => row.value)
+    },
+    async save(value) {
+      if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.id !== 'string' || !value.id) {
+        throw new TypeError('Harness repository expected a serialized Theme Definition object with an id.')
+      }
+      await ready
+      await pool.query('insert into harness_themes (id, value) values ($1, $2) on conflict (id) do update set value = excluded.value', [value.id, JSON.stringify(value)])
+    },
+    async delete(id) {
+      await ready
+      await pool.query('delete from harness_themes where id = $1', [id])
     }
-
-    const id = value.id
-    if (typeof id !== 'string' || !id) {
-      throw new TypeError('Harness repository expected a Theme Definition id.')
-    }
-
-    values.set(id, value)
-  },
-  async delete(id) {
-    values.delete(id)
   }
 }
 
@@ -122,9 +132,15 @@ const authorization = {
 }
 
 export default defineNitroPlugin(() => {
-  provideThemeRepository({
-    getThemeRepository: () => repository
-  })
+  // Without a database Theme Manager runs stand-alone: the built-in default Theme
+  // applies and nothing can be created or edited.
+  const pool = harnessDatabase()
+  if (pool) {
+    const repository = postgresThemeRepository(pool)
+    provideThemeRepository({
+      getThemeRepository: () => repository
+    })
+  }
 
   provideThemeActorContext({
     getActorContext: actorForCurrentRequest

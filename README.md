@@ -18,10 +18,16 @@ Layer dependencies are pinned to exact Git commits. CI installs with a frozen lo
 
 | Layer | Commit |
 |---|---|
-| Theme Manager | `902ed58140452f5a0c3fbd22f3e9d2481ed99655` |
+| Theme Manager | `3f928bcf80bd6e32e0aa991fe0115096a1fe6280` |
 | Authentication | `5d18dfcaeb4e18e830a978e7c326bb3c30e6592d` |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
+
+### One database, or none
+
+Both layers use the one disposable PostgreSQL named by `HARNESS_DATABASE_URL` (`server/utils/harness-database.ts`): Authentication through its database port, Theme Manager through a small JSONB `harness_themes` table (`server/plugins/theme-manager-harness.ts`), seeded with the test Theme.
+
+Without `HARNESS_DATABASE_URL` the harness still runs as a demonstration: Theme Manager runs stand-alone on its built-in default Theme (no creating or editing; its pages open without sign-in), and Authentication fails closed (503). The home page states which Theme storage is in use.
 
 ### Authentication composition
 
@@ -29,11 +35,12 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 
 | Responsibility | Harness adapter |
 |---|---|
-| Database port | `pg.Pool` from `HARNESS_DATABASE_URL`; migrations applied at start-up (`server/plugins/authentication-harness.ts`) |
+| Database port | The shared `pg.Pool` from `HARNESS_DATABASE_URL`; migrations applied at start-up (`server/plugins/authentication-harness.ts`) |
 | Mailer and event sink | Recorders, readable at `/api/__harness/recorder` only when `HARNESS_TEST_MODE=1` |
 | Identity (principal → Theme actor) | A principal at the policy's required level (aal2) becomes the Theme actor; anything else is anonymous (`server/plugins/theme-manager-harness.ts`) |
 | Authorization (interim) | Anyone may read and use Themes; only signed-in actors may change them |
-| Routing | Theme administration requires sign-in (`app/middleware/theme-administration.global.ts`); layer pages own their `<main>` landmark (`app/app.vue`) |
+| Theme storage | PostgreSQL table in the same database; absent without it, so Theme Manager runs stand-alone |
+| Routing | Theme administration requires sign-in when Theme storage exists (`app/middleware/theme-administration.global.ts`); layer pages own their `<main>` landmark (`app/app.vue`) |
 | Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
 
 `tests/e2e/authentication.spec.ts` covers composition conflicts (routes, styling beside Nuxt UI, landmarks, headers, WCAG 2.2 AA in both modes), the principal-to-actor mapping (anonymous, aal1 and signed-out sessions cannot change Themes), and negative paths across the boundary (cross-origin requests, forged session cookies, secrets in events).
