@@ -14,6 +14,8 @@ concurrency:
 
 jobs:
   ci:
+    # The check the master ruleset requires, as in the layer repositories.
+    name: quality
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
 
