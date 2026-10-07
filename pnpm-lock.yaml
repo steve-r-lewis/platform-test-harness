@@ -176,8 +176,8 @@ importers:
         specifier: ^4.11.1
         version: 4.11.2(93788a16d5f7d73ab177980e5e857990)
       '@nuxt4-layers/authentication':
-        specifier: git+https://github.com/nuxt4-layers/authentication.git#5d18dfcaeb4e18e830a978e7c326bb3c30e6592d
-        version: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/5d18dfcaeb4e18e830a978e7c326bb3c30e6592d(1984ed7af82b11f193406bca05676db9)
+        specifier: git+https://github.com/nuxt4-layers/authentication.git#a2dfb703371e536c7f735cb51573e40dbfd6ccd6
+        version: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/a2dfb703371e536c7f735cb51573e40dbfd6ccd6(1984ed7af82b11f193406bca05676db9)
       '@nuxt4-layers/theme-manager':
         specifier: git+https://github.com/nuxt4-layers/theme-manager.git#3f928bcf80bd6e32e0aa991fe0115096a1fe6280
         version: https://codeload.github.com/nuxt4-layers/theme-manager/tar.gz/3f928bcf80bd6e32e0aa991fe0115096a1fe6280
@@ -1218,8 +1218,8 @@ packages:
       rollup-plugin-visualizer:
         optional: true
 
-  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/5d18dfcaeb4e18e830a978e7c326bb3c30e6592d':
-    resolution: {gitHosted: true, integrity: sha512-kED/NkEcYRixwiKfLeOSjEsWQuDYqRE1UQFk4uVil6viHkDPqSuq4uFng4a/mIFHFYEMEF+SHWapcX3PkDpUvQ==, tarball: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/5d18dfcaeb4e18e830a978e7c326bb3c30e6592d}
+  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/a2dfb703371e536c7f735cb51573e40dbfd6ccd6':
+    resolution: {gitHosted: true, integrity: sha512-V5hCF1zPLqMKVTthnWlvBGTtxo1FgjwtT7zb5bOk8K6S1UW0DgSfMPni7UJrmFILkZVkDUUiL6vnAF/mCyyA3w==, tarball: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/a2dfb703371e536c7f735cb51573e40dbfd6ccd6}
     version: 0.6.0
     engines: {node: '>=22'}
     peerDependencies:
@@ -7065,7 +7065,7 @@ snapshots:
       - webpack
       - yaml
 
-  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/5d18dfcaeb4e18e830a978e7c326bb3c30e6592d(1984ed7af82b11f193406bca05676db9)':
+  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/a2dfb703371e536c7f735cb51573e40dbfd6ccd6(1984ed7af82b11f193406bca05676db9)':
     dependencies:
       '@better-auth/passkey': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(pg@8.23.1)(vue@3.5.43(typescript@6.0.3)))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.4)
       '@nuxt/kit': 4.5.2(magic-string@1.4.2)(magicast@0.5.5)(rolldown@1.2.11)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.11)(rollup@4.63.5)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))
