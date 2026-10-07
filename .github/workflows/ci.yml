@@ -14,7 +14,10 @@ concurrency:
 
 jobs:
   ci:
-    runs-on: ${{ matrix.os }}
+    # The check the master ruleset requires, as in the layer repositories. No matrix:
+    # GitHub appends matrix values to the name, which the ruleset would not match.
+    name: quality
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     services:
@@ -34,10 +37,6 @@ jobs:
     env:
       HARNESS_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        node: [22]
 
     steps:
       - name: Checkout
@@ -53,27 +52,9 @@ jobs:
       - name: Install node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
           cache: pnpm
-
-      - name: Configure private layer repository access
-        env:
-          NUXT4_LAYERS_READ_TOKEN: ${{ secrets.NUXT4_LAYERS_READ_TOKEN }}
-        run: |
-          if [ -z "$NUXT4_LAYERS_READ_TOKEN" ]; then
-            echo "::error::The NUXT4_LAYERS_READ_TOKEN repository secret is not set."
-            exit 1
-          fi
-          # Scoped to the nuxt4-layers organisation only.
-          git config --global url."https://x-access-token:${NUXT4_LAYERS_READ_TOKEN}@github.com/nuxt4-layers/".insteadOf "https://github.com/nuxt4-layers/"
-          # Fail early, naming any private layer the token cannot read.
-          for repo in theme-manager authentication; do
-            if ! git ls-remote --exit-code "https://github.com/nuxt4-layers/${repo}.git" HEAD > /dev/null; then
-              echo "::error::NUXT4_LAYERS_READ_TOKEN cannot read nuxt4-layers/${repo}."
-              exit 1
-            fi
-          done
-
+      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

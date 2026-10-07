@@ -1,11 +1,14 @@
 <script setup lang="ts">
-const checks = [
+const { storage } = await useThemeCapabilities()
+const checks = computed(() => [
   'Theme Manager layer composes through its package root',
   'Bundled semantic presentation stylesheet is active',
-  'Host-provided in-memory ThemeRepository is available',
+  storage.value
+    ? 'Theme storage: PostgreSQL through HARNESS_DATABASE_URL'
+    : 'Theme storage: none, so Theme Manager runs stand-alone on its built-in default Theme',
   'Host-provided actor and Authorization adapters are available',
   'Theme Manager administration routes are supplied by the layer'
-]
+])
 </script>
 
 <template>
@@ -29,6 +32,7 @@ const checks = [
           icon="i-lucide-palette"
         />
         <UButton
+          v-if="storage"
           to="/theme-manager/new"
           label="Create Theme"
           variant="outline"
