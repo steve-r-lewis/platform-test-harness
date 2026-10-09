@@ -1,7 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  // Peers: neither layer extends the other. The harness is the composition root.
-  extends: ['@nuxt4-layers/theme-manager', '@nuxt4-layers/authentication'],
+  // Peers: no layer extends another. The harness is the composition root, and
+  // connects the IAM members only through @nuxt4-layers/iam-integration's adapters.
+  extends: ['@nuxt4-layers/theme-manager', '@nuxt4-layers/authentication', '@nuxt4-layers/identity', '@nuxt4-layers/authorisation', '@nuxt4-layers/iam-integration'],
 
   modules: [
     '@nuxt/eslint',

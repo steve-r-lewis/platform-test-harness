@@ -10,6 +10,10 @@ import { defineConfig, devices } from '@playwright/test'
 const ORIGIN = 'http://localhost:3000'
 const database = new URL(process.env.HARNESS_POSTGRES_URL ?? 'postgres://postgres@localhost:5432/postgres')
 database.pathname = '/platform_harness_e2e'
+// Identity's runtime role, created by prepare-database.mjs.
+const identityRuntime = new URL(database)
+identityRuntime.username = 'harness_identity_runtime'
+identityRuntime.password = 'harness-identity-runtime-password'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -31,6 +35,8 @@ export default defineConfig({
     timeout: 180_000,
     env: {
       HARNESS_DATABASE_URL: database.toString(),
+      HARNESS_IDENTITY_DATABASE_URL: identityRuntime.toString(),
+      NUXT_IDENTITY_BASE_URL: ORIGIN,
       HARNESS_TEST_MODE: '1',
       NUXT_AUTHENTICATION_SECRET: 'harness-e2e-secret-that-is-long-enough-0123456789',
       NUXT_AUTHENTICATION_BASE_URL: ORIGIN

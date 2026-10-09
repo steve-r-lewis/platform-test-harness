@@ -36,8 +36,9 @@ export default defineNitroPlugin(() => {
   })
 
   provideAuthenticationEventSink({
-    emit(event) {
+    async emit(event) {
       if (harnessTestMode) harnessRecorder.events.push(event)
+      for (const listener of harnessAuthenticationListeners) await listener(event)
     }
   })
 
