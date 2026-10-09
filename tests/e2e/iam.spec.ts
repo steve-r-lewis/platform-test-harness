@@ -81,6 +81,43 @@ test.describe.serial('IAM suite', () => {
     expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
   })
 
+  test('paused membership: Authorisation lets the member view the group but not change it', async ({ browser }) => {
+    const member = await anotherPerson(browser)
+    try {
+      // The person asks to join the platform group, and its owner approves.
+      const asked = await member.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
+      expect(asked.status()).toBe(200)
+      const { joinRequestId } = await asked.json()
+      expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
+      await relay(ownerPage)
+
+      const createChild = (name: string) => member.page.request.post('/api/identity/groups', { data: { parentGroupId: platformGroupId, name }, headers })
+      const viewGroup = () => member.page.request.get(`/api/identity/groups/${platformGroupId}`)
+      expect((await viewGroup()).status()).toBe(200)
+      expect((await createChild('Before Pause')).status()).toBe(201)
+
+      const me = await (await member.page.request.get('/api/identity/me')).json() as { actor: { memberships: { membershipId: string, group: { groupId: string } }[] } }
+      const { membershipId } = me.actor.memberships.find(m => m.group.groupId === platformGroupId)!
+      expect((await member.page.request.post(`/api/identity/memberships/${membershipId}/pause`, { headers })).status()).toBe(200)
+
+      // Viewing (identity.groups:view and identity.memberships:view, low-risk views) still works; creating a child group, a change, does not.
+      expect((await viewGroup()).status()).toBe(200)
+      expect((await member.page.request.get(`/api/identity/groups/${platformGroupId}/members`)).status()).toBe(200)
+      const refused = await createChild('While Paused')
+      expect(refused.status()).toBe(403)
+      expect((await refused.json()).data).toEqual({ code: 'forbidden', messageKey: 'identity.error.forbidden' })
+
+      expect((await member.page.request.post(`/api/identity/memberships/${membershipId}/resume`, { headers })).status()).toBe(200)
+      expect((await createChild('After Resume')).status()).toBe(201)
+
+      await relay(ownerPage)
+      const events = await (await ownerPage.request.get('/api/__harness/iam/events')).json() as { type: string }[]
+      expect(events.map(e => e.type)).toEqual(expect.arrayContaining(['membership.paused', 'membership.resumed']))
+    } finally {
+      await member.close()
+    }
+  })
+
   test('pausing: Identity\'s pause ends the person\'s sessions, and they return only to resume', async ({ browser }) => {
     const person = await anotherPerson(browser)
     try {

@@ -90,7 +90,7 @@ export default defineNitroPlugin((nitro) => {
   // Authorisation: its own schema; Identity's permissions in its catalogue and roles.
   provideAuthorisationDatabase({ dialect: 'postgres', pool: operator })
   migrateAuthorisationDatabase()
-  provideAuthorisationPermissions(IDENTITY_PERMISSIONS.map(({ name, description, risk }) => ({ name, description, risk })))
+  provideAuthorisationPermissions(IDENTITY_PERMISSIONS.map(({ name, description, risk, effect }) => ({ name, description, risk, effect })))
   provideAuthorisationPolicy({ roles: rolesWithIdentityPermissions({ permissions: IDENTITY_PERMISSIONS, roles: DEFAULT_AUTHORISATION_POLICY.roles }) })
   provideAuthorisationDirectory(authorisationDirectoryFromIdentity({
     directory: {
