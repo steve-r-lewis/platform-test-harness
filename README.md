@@ -33,7 +33,7 @@ Layer dependencies are pinned to exact Git commits. CI installs with a frozen lo
 | Authentication | `ef37b290177c34afdeacd4a9aa02ba661acc952d` (0.6.0 with the identity port and credential recovery records) |
 | Identity | `9265d6f44f726235b15b8a48f86e8abed74e8e65` (0.1.0) |
 | Authorisation | `ed2905cb99863d2b059942eb460229bff17b1875` (0.2.0 with phase 2 storage) |
-| IAM integration | `02207aa51eab83ffbced2f5e2e44072ea61bd255` (0.1.0, reference adapters) |
+| IAM integration | `8121f65eabc4325ba1e0563ad290a0bc152f1052` (0.1.0, reference adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
