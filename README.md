@@ -34,7 +34,7 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Identity | `41dbcf27c75c7da24072938a0ef051bf9b1d59d9` (0.1.0 with permission effects) |
 | Authorisation | `dea93792aac7b5d6682a820fd7edd67ab2d9e4c8` (0.3.0, contract 3: view-only paused members) |
 | Profile | `a298abb8c896db6f0ef4685c4fa3110d1cf4ca2f` (0.2.0, encrypted records and the `/api/profile/*` endpoints) |
-| IAM integration | `c30d13fb547b732e5f51f74f92eb33151134fd41` (0.1.0, reference adapters; Identity's events forwarded to Profile) |
+| IAM integration | `eb29ef17b5c96afdfa30cc2235df899bd95062d9` (0.1.0, reference adapters; Identity's events forwarded to Profile) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
