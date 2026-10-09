@@ -30,7 +30,10 @@ Layer dependencies are pinned to exact Git commits. CI installs with a frozen lo
 | Layer | Commit |
 |---|---|
 | Theme Manager | `3f928bcf80bd6e32e0aa991fe0115096a1fe6280` |
-| Authentication | `a2dfb703371e536c7f735cb51573e40dbfd6ccd6` (0.6.0) |
+| Authentication | `ef37b290177c34afdeacd4a9aa02ba661acc952d` (0.6.0 with the identity port and credential recovery records) |
+| Identity | `9265d6f44f726235b15b8a48f86e8abed74e8e65` (0.1.0) |
+| Authorisation | `ed2905cb99863d2b059942eb460229bff17b1875` (0.2.0 with phase 2 storage) |
+| IAM integration | `8121f65eabc4325ba1e0563ad290a0bc152f1052` (0.1.0, reference adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
@@ -55,6 +58,24 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
 
 `tests/e2e/authentication.spec.ts` covers composition conflicts (routes, styling beside Nuxt UI, landmarks, headers, WCAG 2.2 AA in both modes), the principal-to-actor mapping (anonymous, aal1 and signed-out sessions cannot change Themes), and negative paths across the boundary (cross-origin requests, forged session cookies, secrets in events).
+
+### IAM suite composition
+
+Identity, Authentication and Authorisation are composed as peers and connected only through `@nuxt4-layers/iam-integration`'s reference adapters (`server/plugins/iam-harness.ts`); no member imports another. It runs when `HARNESS_IDENTITY_DATABASE_URL` is set as well: Identity's runtime role, which owns nothing and cannot bypass row-level security, in the same database. `HARNESS_DATABASE_URL`'s role migrates every schema and serves as Identity's operator.
+
+| Port | Supplied by |
+|---|---|
+| Authentication's identity port | Identity's provisioning port: Identity issues every account's identifier, and its standing gates sign-in and every request |
+| Identity's subject resolver | Authentication's `getAuthenticatedPrincipal` |
+| Identity's access decision and approval policy | Authorisation's `authorise`, `authorisationQualifies` and `countAuthorisationQualifying` |
+| Authorisation's directory | Identity's directory (`paused` passed on as `suspended`) |
+| Authorisation's catalogue and roles | Identity's permissions, named in the `owner` and `administrator` roles |
+| Identity's event publisher | The adapters' event handler: sessions revoked, accounts discarded or deleted, `owner` and membership roles kept in step |
+| Credential recovery | Authentication's `credentials-recovered` event, and reconciliation from its records every minute |
+
+At start-up the harness migrates Identity and provisions one tenant, every sign-up's home tenant. It relays Identity's outbox every two seconds and runs Identity's maintenance every minute. In test mode, `POST /api/__harness/iam/bootstrap` stands in for the operator's procedure that founds the platform group, `POST /api/__harness/iam/relay` relays at once, and `GET /api/__harness/iam/events` lists the relayed events.
+
+`tests/e2e/iam.spec.ts` follows the processes across the members: provisioning, Authorisation deciding Identity's permissions from roles that follow Identity's owners, Identity's pages through the composition (WCAG 2.2 AA), pausing ending sessions, and events carrying opaque identifiers only.
 
 ## Run it locally (with sign-in)
 
@@ -109,10 +130,12 @@ HARNESS_POSTGRES_URL=postgres://postgres@localhost:5432/postgres pnpm test:e2e
 
 Installing needs read access to the private `nuxt4-layers` repositories (`theme-manager` and `authentication`); CI uses the `NUXT4_LAYERS_READ_TOKEN` secret.
 
-For local development (authentication needs a database and a secret):
+For local development (authentication needs a database and a secret; the IAM suite also needs Identity's runtime role, created once with `create role harness_identity_runtime login password '…' nosuperuser nobypassrls`):
 
 ```bash
 HARNESS_DATABASE_URL=postgres://postgres@localhost:5432/harness \
+HARNESS_IDENTITY_DATABASE_URL=postgres://harness_identity_runtime:…@localhost:5432/harness \
+NUXT_IDENTITY_BASE_URL=http://localhost:3000 \
 NUXT_AUTHENTICATION_SECRET="$(openssl rand -base64 48)" \
 NUXT_AUTHENTICATION_BASE_URL=http://localhost:3000 \
 pnpm dev --host localhost
