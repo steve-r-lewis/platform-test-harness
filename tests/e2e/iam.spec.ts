@@ -118,6 +118,49 @@ test.describe.serial('IAM suite', () => {
     }
   })
 
+  test('profile: a fellow member sees the name a person chose; an outsider does not', async ({ browser }) => {
+    // The owner sets their name; Profile has their record since provisioning.
+    const own = await (await ownerPage.request.get('/api/profile/me')).json() as { version: number }
+    expect(own.version).toBeGreaterThan(0)
+    const named = await ownerPage.request.patch('/api/profile/me', { data: { expectedVersion: own.version, changes: { name: 'Ada Harness' } }, headers })
+    expect(named.status()).toBe(200)
+    // Another tab still holding the old version is refused.
+    const stale = await ownerPage.request.patch('/api/profile/me', { data: { expectedVersion: own.version, changes: { name: 'Someone Else' } }, headers })
+    expect(stale.status()).toBe(409)
+    const ownerId = (await (await ownerPage.request.get('/api/authentication/session')).json()).principal.principalId as string
+
+    const member = await anotherPerson(browser)
+    const outsider = await anotherPerson(browser)
+    try {
+      const asked = await member.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
+      const { joinRequestId } = await asked.json()
+      expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
+      await relay(ownerPage)
+
+      // Through Profile's API: the name to a fellow member, nothing to an outsider.
+      const seen = await (await member.page.request.get(`/api/profile/people/${ownerId}?groupId=${platformGroupId}`)).json()
+      expect(seen).toEqual({ subjectId: ownerId, displayName: { kind: 'name', value: 'Ada Harness' }, attributes: { name: 'Ada Harness' } })
+      const hidden = await (await outsider.page.request.post('/api/profile/display-names', { data: { subjectIds: [ownerId], purpose: 'listing' }, headers })).json()
+      expect(hidden).toEqual([{ subjectId: ownerId, displayName: { kind: 'hidden' } }])
+
+      // On Identity's group page, through the host's IdentityPersonName: the member sees the owner's name.
+      await member.page.goto(`/groups/${platformGroupId}`)
+      await expect(member.page.locator(`[data-identity-id="${ownerId}"]`).first()).toHaveText('Ada Harness')
+      // The member set no name: Profile shows the neutral fallback.
+      await expect(member.page.locator(`[data-identity-id="${member.principalId}"]`).first()).toHaveText('Member')
+
+      // Profile's events carry identifiers and attribute names, never the name itself.
+      await relay(ownerPage)
+      const events = await (await ownerPage.request.get('/api/__harness/iam/events')).json() as { type: string, data: Record<string, unknown> }[]
+      expect(events.map(e => e.type)).toEqual(expect.arrayContaining(['profile.created', 'profile.changed']))
+      expect(events.find(e => e.type === 'profile.changed' && e.data.identityId === ownerId)?.data).toEqual({ identityId: ownerId, attributes: ['name'], disclosure: false })
+      expect(JSON.stringify(events)).not.toContain('Ada Harness')
+    } finally {
+      await member.close()
+      await outsider.close()
+    }
+  })
+
   test('pausing: Identity\'s pause ends the person\'s sessions, and they return only to resume', async ({ browser }) => {
     const person = await anotherPerson(browser)
     try {

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { defineConfig, devices } from '@playwright/test'
 
 /**
@@ -14,6 +15,10 @@ database.pathname = '/platform_harness_e2e'
 const identityRuntime = new URL(database)
 identityRuntime.username = 'harness_identity_runtime'
 identityRuntime.password = 'harness-identity-runtime-password'
+// Profile's runtime role, likewise.
+const profileRuntime = new URL(database)
+profileRuntime.username = 'harness_profile_runtime'
+profileRuntime.password = 'harness-profile-runtime-password'
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -37,6 +42,10 @@ export default defineConfig({
       HARNESS_DATABASE_URL: database.toString(),
       HARNESS_IDENTITY_DATABASE_URL: identityRuntime.toString(),
       NUXT_IDENTITY_BASE_URL: ORIGIN,
+      HARNESS_PROFILE_DATABASE_URL: profileRuntime.toString(),
+      // A fresh master key for each run, unless one is supplied.
+      HARNESS_PROFILE_MASTER_KEY: process.env.HARNESS_PROFILE_MASTER_KEY ?? randomBytes(32).toString('base64'),
+      NUXT_PROFILE_BASE_URL: ORIGIN,
       HARNESS_TEST_MODE: '1',
       NUXT_AUTHENTICATION_SECRET: 'harness-e2e-secret-that-is-long-enough-0123456789',
       NUXT_AUTHENTICATION_BASE_URL: ORIGIN
