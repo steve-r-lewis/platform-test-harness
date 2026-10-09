@@ -1,6 +1,7 @@
 import pg from 'pg'
 import { DEFAULT_AUTHORISATION_POLICY } from '@nuxt4-layers/authorisation/contracts'
 import type { IdentityEvent } from '@nuxt4-layers/identity/contracts'
+import type { ProfileEvent } from '@nuxt4-layers/profile/contracts'
 import { IDENTITY_PERMISSIONS } from '@nuxt4-layers/identity/contracts'
 import {
   authenticationIdentityFromIdentity,
@@ -17,17 +18,25 @@ import {
 import { harnessTestMode } from './authentication-harness'
 
 /**
- * Composition root for the IAM suite: Identity, Authentication and
- * Authorisation, connected only through iam-integration's reference adapters
- * (no member imports another). Runs when both database URLs are set:
+ * Composition root for the IAM suite: Identity, Authentication,
+ * Authorisation and Profile, connected only through iam-integration's
+ * reference adapters (no member imports another). Runs when both database
+ * URLs are set:
  *
  * - HARNESS_DATABASE_URL           the migration (owner) role; Authentication's
- *                                  and Authorisation's schemas, Identity's migrations
+ *                                  and Authorisation's schemas, Identity's and
+ *                                  Profile's migrations
  * - HARNESS_IDENTITY_DATABASE_URL  Identity's runtime role, which owns nothing
  *                                  and cannot bypass row-level security
  *
- * Without them, Identity's ports are absent and it fails closed, and
- * Authentication runs on its own, as before.
+ * Profile joins when, in addition, these are set:
+ *
+ * - HARNESS_PROFILE_DATABASE_URL   Profile's runtime role, which owns nothing
+ * - HARNESS_PROFILE_MASTER_KEY     32 bytes, base64: the key that wraps each
+ *                                  person's data key (a KMS in production)
+ *
+ * Without them, the missing members' ports are absent and they fail closed,
+ * and Authentication runs on its own, as before.
  */
 export interface IamHarness {
   /** Resolves once Identity is migrated and its default tenant exists. */
@@ -36,24 +45,61 @@ export interface IamHarness {
   operator: pg.Pool | null
   tenantId: string | null
   platformGroupId: string | null
-  /** Identity's events as relayed, for the test probes (test mode only). */
-  events: IdentityEvent[]
+  /** Identity's and Profile's events as relayed, for the test probes (test mode only). */
+  events: (IdentityEvent | ProfileEvent)[]
+  /** Whether Profile is composed. */
+  profile: boolean
 }
 
-export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [] }
+export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false }
 
 /** Supplies Identity's policy: the harness tenant is every sign-up's home tenant. */
 export function applyIdentityPolicy(): void {
   provideIdentityPolicy({ defaultHomeTenantId: iamHarness.tenantId, platformGroupId: iamHarness.platformGroupId })
 }
 
-/** Relays Identity's outbox once: what the timer does, for the test probes. */
+/** Relays Identity's outbox, then Profile's, until both are empty: what the timers do, for the test probes. */
 export async function relayIdentityNow(): Promise<void> {
   await iamHarness.ready
   for (;;) {
     const result = await relayIdentityOutbox({ limit: 100 })
-    if (result.published === 0 || result.failed > 0) return
+    if (result.published === 0 || result.failed > 0) break
   }
+  if (iamHarness.profile) {
+    while (await relayProfileOutbox({ limit: 100, publish: publishProfileEvent }) > 0) { /* until empty */ }
+  }
+}
+
+/** Profile's events have no consumer in the harness yet; the test probes record them. */
+async function publishProfileEvent(event: ProfileEvent): Promise<void> {
+  if (harnessTestMode) iamHarness.events.push(event)
+}
+
+/**
+ * Profile: migrated with the owner role, used through its own runtime role,
+ * each person's key wrapped by the harness's master key, and Identity's
+ * disclosure context and Authentication's principal through the host.
+ */
+function composeProfile(operator: pg.Pool): boolean {
+  const runtimeUrl = process.env.HARNESS_PROFILE_DATABASE_URL
+  const masterKey = process.env.HARNESS_PROFILE_MASTER_KEY
+  if (!runtimeUrl || !masterKey) return false
+  provideProfileDatabase({
+    dialect: 'postgres',
+    pool: new pg.Pool({ connectionString: runtimeUrl, max: 5 }),
+    migrationPool: operator,
+    runtimeRole: decodeURIComponent(new URL(runtimeUrl).username)
+  })
+  migrateProfileDatabase()
+  provideProfileKeyWrapper(createLocalProfileKeyWrapper({ keys: { 'harness-1': masterKey }, current: 'harness-1' }))
+  provideProfileDisclosureContext({
+    async describe(request, options) {
+      await iamHarness.ready
+      return getIdentityDisclosureContext().describe(request, options)
+    }
+  })
+  provideProfileSubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
+  return true
 }
 
 export default defineNitroPlugin((nitro) => {
@@ -107,7 +153,9 @@ export default defineNitroPlugin((nitro) => {
     qualifies: authorisationQualifies,
     countQualifying: countAuthorisationQualifying
   }))
+  iamHarness.profile = composeProfile(operator)
   const handleIdentityEvent = createIdentityEventHandler({
+    applyProfileEvent: iamHarness.profile ? applyProfileIdentityEvent : undefined,
     revokeSessions: revokeAuthenticationSessions,
     discardAccount: discardAuthenticationAccount,
     deleteAccount: deleteAuthenticationAccount,
@@ -145,11 +193,14 @@ export default defineNitroPlugin((nitro) => {
     }, ms)
     nitro.hooks.hook('close', () => clearInterval(timer))
   }
-  every(2_000, 'Identity outbox relay', relayIdentityNow)
+  every(2_000, 'outbox relay', relayIdentityNow)
   every(60_000, 'Identity maintenance', async () => {
     await iamHarness.ready
     await runIdentityMaintenance()
   })
+  if (iamHarness.profile) {
+    every(60_000, 'Profile key re-wrapping', () => rewrapProfileKeys())
+  }
   every(60_000, 'credential recovery reconciliation', async () => {
     const result = await reconcileCredentialRecoveries({ list: listAuthenticationCredentialRecoveries, record, after: recoveryCursor })
     recoveryCursor = result.after

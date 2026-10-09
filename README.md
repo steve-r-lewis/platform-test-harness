@@ -33,7 +33,8 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authentication | `24d57ae10f05695b84e03da656aaa5cd58b8ff2f` (0.6.0 with the identity port and credential recovery records) |
 | Identity | `41dbcf27c75c7da24072938a0ef051bf9b1d59d9` (0.1.0 with permission effects) |
 | Authorisation | `dea93792aac7b5d6682a820fd7edd67ab2d9e4c8` (0.3.0, contract 3: view-only paused members) |
-| IAM integration | `f2dcec8afd27bec5f0a40d73e652dc4644d6ad4c` (0.1.0, reference adapters for Authorisation contract 3) |
+| Profile | `a298abb8c896db6f0ef4685c4fa3110d1cf4ca2f` (0.2.0, encrypted records and the `/api/profile/*` endpoints) |
+| IAM integration | `c30d13fb547b732e5f51f74f92eb33151134fd41` (0.1.0, reference adapters; Identity's events forwarded to Profile) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
@@ -61,21 +62,27 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 
 ### IAM suite composition
 
-Identity, Authentication and Authorisation are composed as peers and connected only through `@nuxt4-layers/iam-integration`'s reference adapters (`server/plugins/iam-harness.ts`); no member imports another. It runs when `HARNESS_IDENTITY_DATABASE_URL` is set as well: Identity's runtime role, which owns nothing and cannot bypass row-level security, in the same database. `HARNESS_DATABASE_URL`'s role migrates every schema and serves as Identity's operator.
+Identity, Authentication, Authorisation and Profile are composed as peers and connected only through `@nuxt4-layers/iam-integration`'s reference adapters (`server/plugins/iam-harness.ts`); no member imports another. It runs when `HARNESS_IDENTITY_DATABASE_URL` is set as well: Identity's runtime role, which owns nothing and cannot bypass row-level security, in the same database. `HARNESS_DATABASE_URL`'s role migrates every schema and serves as Identity's operator.
+
+Profile joins when `HARNESS_PROFILE_DATABASE_URL` (its own runtime role, which owns nothing) and `HARNESS_PROFILE_MASTER_KEY` (32 bytes, base64: wraps each person's data key, standing in for a KMS) are set too, with `NUXT_PROFILE_BASE_URL`. The browser tests generate a fresh master key for each run.
 
 | Port | Supplied by |
 |---|---|
 | Authentication's identity port | Identity's provisioning port: Identity issues every account's identifier, and its standing gates sign-in and every request |
 | Identity's subject resolver | Authentication's `getAuthenticatedPrincipal` |
 | Identity's access decision and approval policy | Authorisation's `authorise`, `authorisationQualifies` and `countAuthorisationQualifying` |
-| Authorisation's directory | Identity's directory (`paused` passed on as `suspended`) |
+| Authorisation's directory | Identity's directory (`paused` passed through: view-only under Authorisation contract 3) |
 | Authorisation's catalogue and roles | Identity's permissions, named in the `owner` and `administrator` roles |
-| Identity's event publisher | The adapters' event handler: sessions revoked, accounts discarded or deleted, `owner` and membership roles kept in step |
+| Identity's event publisher | The adapters' event handler: Profile's records created, departures kept and records erased; sessions revoked, accounts discarded or deleted, `owner` and membership roles kept in step |
+| Profile's subject resolver | Authentication's `getAuthenticatedPrincipal` |
+| Profile's disclosure context | Identity's disclosure-context port |
+| Profile's key wrapper | Profile's local wrapper over `HARNESS_PROFILE_MASTER_KEY` |
+| Identity's `IdentityPersonName` | The harness's own component (`app/components/IdentityPersonName.vue`): names from Profile, as the signed-in viewer may see them, with each page's names batched into one lookup |
 | Credential recovery | Authentication's `credentials-recovered` event, and reconciliation from its records every minute |
 
-At start-up the harness migrates Identity and provisions one tenant, every sign-up's home tenant. It relays Identity's outbox every two seconds and runs Identity's maintenance every minute. In test mode, `POST /api/__harness/iam/bootstrap` stands in for the operator's procedure that founds the platform group, `POST /api/__harness/iam/relay` relays at once, and `GET /api/__harness/iam/events` lists the relayed events.
+At start-up the harness migrates Identity and provisions one tenant, every sign-up's home tenant. It relays Identity's and Profile's outboxes every two seconds, runs Identity's maintenance every minute, and re-wraps Profile's keys every minute (a no-op until the master key's version changes). Profile's events have no consumer yet; in test mode they are recorded with Identity's. In test mode, `POST /api/__harness/iam/bootstrap` stands in for the operator's procedure that founds the platform group, `POST /api/__harness/iam/relay` relays at once, and `GET /api/__harness/iam/events` lists the relayed events.
 
-`tests/e2e/iam.spec.ts` follows the processes across the members: provisioning, Authorisation deciding Identity's permissions from roles that follow Identity's owners, Identity's pages through the composition (WCAG 2.2 AA), pausing ending sessions, and events carrying opaque identifiers only.
+`tests/e2e/iam.spec.ts` follows the processes across the members: provisioning, Authorisation deciding Identity's permissions from roles that follow Identity's owners, Identity's pages through the composition (WCAG 2.2 AA), a paused member viewing but not changing, Profile showing a person's chosen name to a fellow member (through its API and on Identity's group page) and nothing to an outsider, pausing ending sessions, and events carrying opaque identifiers only.
 
 ## Run it locally (with sign-in)
 
@@ -130,12 +137,15 @@ HARNESS_POSTGRES_URL=postgres://postgres@localhost:5432/postgres pnpm test:e2e
 
 Installing needs read access to the private `nuxt4-layers` repositories (`theme-manager` and `authentication`); CI uses the `NUXT4_LAYERS_READ_TOKEN` secret.
 
-For local development (authentication needs a database and a secret; the IAM suite also needs Identity's runtime role, created once with `create role harness_identity_runtime login password '…' nosuperuser nobypassrls`):
+For local development (authentication needs a database and a secret; the IAM suite also needs Identity's and Profile's runtime roles, created once with `create role harness_identity_runtime login password '…' nosuperuser nobypassrls` and likewise `harness_profile_runtime`):
 
 ```bash
 HARNESS_DATABASE_URL=postgres://postgres@localhost:5432/harness \
 HARNESS_IDENTITY_DATABASE_URL=postgres://harness_identity_runtime:…@localhost:5432/harness \
 NUXT_IDENTITY_BASE_URL=http://localhost:3000 \
+HARNESS_PROFILE_DATABASE_URL=postgres://harness_profile_runtime:…@localhost:5432/harness \
+HARNESS_PROFILE_MASTER_KEY="<32 random bytes, base64; keep it>" \
+NUXT_PROFILE_BASE_URL=http://localhost:3000 \
 NUXT_AUTHENTICATION_SECRET="$(openssl rand -base64 48)" \
 NUXT_AUTHENTICATION_BASE_URL=http://localhost:3000 \
 pnpm dev --host localhost
