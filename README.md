@@ -33,8 +33,8 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authentication | `ca5e23cb91c17d5f74bbc5c100a837e51685acd5` (0.6.0 with the identity port, credential recovery records and its data-subject export) |
 | Identity | `6711f79570bcaa6cd1ea95acb81e20b145bb609d` (0.1.0 with permission effects and the names of groups a person left) |
 | Authorisation | `12ebb917afc70301b0d6315a548654bab41360f0` (0.3.0, contract 3: view-only paused members; export and erasure of a principal) |
-| Profile | `74db91a962264beebd4cb9367441dce95e36e0d0` (0.4.0, phase 4: data-subject requests and legal holds, contact-detail verification, the administrators' view of suspended members, the departures and requests pages) |
-| IAM integration | `a3a414350c951bd2fba7acbb893962e4a62ae81d` (0.1.0, reference adapters; Identity's events forwarded to Profile; Profile's request coordination and access decision; legal holds on closure) |
+| Profile | `6c91f0daa1638d276355f69fdbfa88b6e399e3d9` (0.4.0, phase 4: data-subject requests and legal holds, contact-detail verification, the administrators' view of suspended members, the departures and requests pages) |
+| IAM integration | `91907176035bef4465cfe89c71b2dcd9353d2cc7` (0.1.0, reference adapters; Identity's events forwarded to Profile; Profile's request coordination and access decision; legal holds on closure) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
