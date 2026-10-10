@@ -352,7 +352,9 @@ test.describe.serial('IAM suite', () => {
       expect((await viewAsOther()).status()).toBe(403)
 
       // Neither the address nor the token reaches any event.
-      expect(JSON.stringify(await events(ownerPage))).not.toMatch(new RegExp(`${token}|${invitee.email.replace(/\./g, '\\.')}`))
+      const relayed = JSON.stringify(await events(ownerPage))
+      expect(relayed).not.toContain(token)
+      expect(relayed).not.toContain(invitee.email)
     } finally {
       await invitee.close()
       await other.close()
@@ -764,7 +766,8 @@ test.describe.serial('IAM suite', () => {
       const holdings = await (await ownerPage.request.get(`/api/__harness/iam/holdings?identityId=${person.principalId}`)).json()
       expect(holdings).toMatchObject({ authentication: null, authorisation: null, profile: null })
       expect(holdings.identity.identity.state).toBe('closed')
-      expect(JSON.stringify(holdings)).not.toMatch(new RegExp(`Closing Person|${person.email.replace(/\./g, '\\.')}`))
+      expect(JSON.stringify(holdings)).not.toContain('Closing Person')
+      expect(JSON.stringify(holdings)).not.toContain(person.email)
 
       // The address is free: signing up afresh makes a new identity.
       const fresh = await browser.newContext({ baseURL: ORIGIN })
