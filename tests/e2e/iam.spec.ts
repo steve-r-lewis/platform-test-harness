@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { lastLink, ORIGIN, PASSWORD, recorder, verifiedAccount } from './support/authentication'
-import type { Change, Person } from './support/iam'
-import { advance, changeOf, clockNow, createGroup, DAY, decide, events, HOUR, invitationLink, join, maintain, membershipIn, personWithPasskey, requestChange } from './support/iam'
+import { lastLink, ORIGIN, PASSWORD, recorder, signInAtAal2, verifiedAccount } from './support/authentication'
+import type { AssignmentView, Change, Person } from './support/iam'
+import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, personWithPasskey, requestAccessChange, requestChange } from './support/iam'
 
 /**
  * The IAM suite composed: Identity, Authentication and Authorisation,
@@ -903,5 +903,166 @@ test.describe.serial('IAM suite', () => {
       await holder.close()
       await target.close()
     }
+  })
+
+  // ---------------------------------------------------------------------------
+  // Access administration (iam-integration docs/processes/access-administration.md)
+  // ---------------------------------------------------------------------------
+
+  let manager: Person
+  let accessTeam: string
+
+  test('access administration: a medium role applies at once, a high one waits for an approver, the descendants scope for a phishing-resistant one; owners follow Identity', async ({ browser }) => {
+    manager = await personWithPasskey(browser)
+    const member = await anotherPerson(browser)
+    try {
+      await join(manager.page, ownerPage, platformGroupId)
+      accessTeam = await createGroup(manager.page, platformGroupId, 'Access Team')
+      await join(member.page, manager.page, accessTeam)
+      // The group's default role for a member, applied on joining.
+      expect((await assignmentsIn(manager.page, accessTeam)).filter(a => a.principalId === member.principalId).map(a => a.roleId)).toEqual(['member'])
+
+      const assign = (roleId: string, scope?: string) => requestAccessChange(manager.page, { type: 'role.assign', target: { principalId: member.principalId, groupId: accessTeam, roleId, ...(scope ? { scope } : {}) } })
+      const viewer = await assign('viewer')
+      expect(viewer.status()).toBe(201)
+      expect(await viewer.json()).toMatchObject({ state: 'applied', route: 'none' })
+
+      // Administrator holds high permissions: nobody else in the group qualifies, so one owner of the parent group approves.
+      const administrator = await (await assign('administrator')).json() as Change
+      expect(administrator).toMatchObject({ state: 'awaiting-approval', route: 'parent-owner' })
+      expect((await decideAccess(manager.page, administrator)).status()).toBe(409)
+      await owner.signInWithPasskey()
+      expect((await decideAccess(ownerPage, administrator, 'approve', '0'.repeat(64))).status()).toBe(409)
+      expect(await (await decideAccess(ownerPage, administrator)).json()).toMatchObject({ state: 'applied' })
+
+      // The descendants scope is critical.
+      const descendants = await (await assign('viewer', 'group-and-descendants')).json() as Change
+      expect(descendants).toMatchObject({ state: 'awaiting-approval', risk: 'critical' })
+      expect(await (await decideAccess(ownerPage, descendants)).json()).toMatchObject({ state: 'applied' })
+      const roles = (await assignmentsIn(manager.page, accessTeam)).filter(a => a.principalId === member.principalId)
+      // One assignment per person, group and role: the wider scope replaced the narrower one.
+      expect(roles.map(a => `${a.roleId}/${a.scope}`).sort()).toEqual(['administrator/group', 'member/group', 'viewer/group-and-descendants'])
+
+      // `owner` is Identity's: never assigned through Authorisation.
+      expect((await assign('owner')).status()).toBe(409)
+      await relay(ownerPage)
+      expect((await events(ownerPage)).some(e => e.type === 'authorisation.change-decided' && e.data.changeId === administrator.changeId)).toBe(true)
+    } finally {
+      await member.close()
+    }
+  })
+
+  test('access administration: nobody grants themselves access outside their personal group; sharing from it needs no approver but step-up', async ({ browser }) => {
+    // Assigning oneself, or confirming one's own assignment, is refused.
+    await manager.signInWithPasskey()
+    expect((await requestAccessChange(manager.page, { type: 'role.assign', target: { principalId: manager.principalId, groupId: accessTeam, roleId: 'viewer' } })).status()).toBe(409)
+    expect((await requestAccessChange(manager.page, { type: 'assignment.confirm', target: { principalId: manager.principalId, groupId: accessTeam, roleId: 'owner' } })).status()).toBe(409)
+
+    // Sharing a note the person's own personal group owns: no approver, at the permission's assurance.
+    const personalGroupOf = async (page: Page) => ((await (await page.request.get('/api/identity/me')).json()) as { actor: { personalGroup: { groupId: string } } }).actor.personalGroup.groupId
+    const share = (page: Page, owningGroupId: string, principalId: string) => requestAccessChange(page, {
+      type: 'grant.create',
+      target: { grant: { resource: { type: 'harness-notes', id: crypto.randomUUID(), owningGroupId }, subject: { kind: 'principal', principalId }, permissions: ['harness-notes:delete'], expiresAt: null } }
+    })
+    const shared = await share(manager.page, await personalGroupOf(manager.page), owner.principalId)
+    expect(shared.status()).toBe(201)
+    expect(await shared.json()).toMatchObject({ state: 'applied', route: 'none', risk: 'critical' })
+
+    // Signed in with an authenticator app, not a passkey: the critical share needs phishing-resistant step-up.
+    const context = await browser.newContext({ baseURL: ORIGIN })
+    try {
+      const page = await context.newPage()
+      await signInAtAal2(page)
+      const refused = await share(page, await personalGroupOf(page), owner.principalId)
+      expect(refused.status()).toBe(403)
+    } finally {
+      await context.close()
+    }
+  })
+
+  test('access administration: a group\'s default roles apply to new members, a guest\'s may hold nothing high, and a time-limited role ends before maintenance runs', async ({ browser }) => {
+    await manager.signInWithPasskey()
+    const defaults = (member: string | null, guest: string | null) => requestAccessChange(manager.page, { type: 'group.change-default-roles', target: { groupId: accessTeam, defaultRoles: { member, guest } } })
+    // A guest's default may never hold a high or critical permission.
+    expect((await defaults('member', 'administrator')).status()).not.toBe(201)
+    const change = await (await defaults('viewer', null)).json() as Change
+    await owner.signInWithPasskey()
+    // High risk, nobody else qualifies in the group: one owner of the parent group approves.
+    expect(change).toMatchObject({ state: 'awaiting-approval', route: 'parent-owner' })
+    expect((await decideAccess(ownerPage, change)).status()).toBe(200)
+    expect((await accessChangeOf(manager.page, change.changeId)).state).toBe('applied')
+
+    const newcomer = await anotherPerson(browser)
+    try {
+      await join(newcomer.page, manager.page, accessTeam)
+      expect((await assignmentsIn(manager.page, accessTeam)).filter(a => a.principalId === newcomer.principalId).map(a => a.roleId)).toEqual(['viewer'])
+
+      // A member role for an hour: the newcomer may create a child group, then may not once it has ended.
+      const endsAt = new Date((await clockNow(ownerPage)).getTime() + HOUR).toISOString()
+      const timed = await requestAccessChange(manager.page, { type: 'role.assign', target: { principalId: newcomer.principalId, groupId: accessTeam, roleId: 'member', expiresAt: endsAt } })
+      expect(await timed.json()).toMatchObject({ state: 'applied' })
+      const createChild = (name: string) => newcomer.page.request.post('/api/identity/groups', { data: { parentGroupId: accessTeam, name }, headers })
+      expect((await createChild('While Assigned')).status()).toBe(201)
+      await advance(ownerPage, 2 * HOUR)
+      expect((await createChild('After The End')).status()).toBe(403)
+      await maintain(ownerPage)
+      expect((await events(ownerPage)).some(e => e.type === 'authorisation.role-expired' && e.data.principalId === newcomer.principalId)).toBe(true)
+    } finally {
+      await newcomer.close()
+    }
+  })
+
+  test('access administration: an assignment nobody confirms within the review interval is shown overdue and keeps working until removed', async () => {
+    await manager.signInWithPasskey()
+    const interval = await (await requestAccessChange(manager.page, { type: 'group.change-review-interval', target: { groupId: accessTeam, intervalDays: 30 } })).json() as Change
+    await owner.signInWithPasskey()
+    expect(interval).toMatchObject({ state: 'awaiting-approval', route: 'parent-owner' })
+    expect((await decideAccess(ownerPage, interval)).status()).toBe(200)
+
+    await advance(ownerPage, 31 * DAY)
+    await maintain(ownerPage)
+    const review = async () => (await (await manager.page.request.get(`/api/authorisation/groups/${accessTeam}/access-review`)).json()) as { reviewIntervalDays: number, entries: (AssignmentView & { overdue: boolean })[] }
+    // Someone else's: nobody confirms their own.
+    const overdue = (await review()).entries.find(e => e.overdue && e.roleId !== 'owner' && e.principalId !== manager.principalId)
+    expect((await review()).reviewIntervalDays).toBe(30)
+    expect(overdue).toBeTruthy()
+    expect((await events(ownerPage)).some(e => e.type === 'authorisation.review-overdue')).toBe(true)
+    // Still in force: the assignment is listed until someone removes it.
+    expect((await assignmentsIn(manager.page, accessTeam)).some(a => a.principalId === overdue!.principalId && a.roleId === overdue!.roleId)).toBe(true)
+
+    await manager.signInWithPasskey()
+    const confirmed = await requestAccessChange(manager.page, { type: 'assignment.confirm', target: { principalId: overdue!.principalId, groupId: accessTeam, roleId: overdue!.roleId } })
+    expect(await confirmed.json()).toMatchObject({ state: 'applied' })
+    expect((await review()).entries.find(e => e.principalId === overdue!.principalId && e.roleId === overdue!.roleId)?.overdue).toBe(false)
+  })
+
+  test('access administration: only the tenant\'s root-group owners define a custom role, with an approval or after the published delay', async () => {
+    const platform = await (await ownerPage.request.get(`/api/identity/groups/${platformGroupId}`)).json() as { group: { tenantId: string } }
+    const role = { id: 'note-editor', name: 'Note editor', permissions: [{ pattern: 'harness-notes:edit' }] }
+    const define = (page: Page) => requestAccessChange(page, { type: 'role.define', target: { tenantId: platform.group.tenantId, role } })
+    await manager.signInWithPasskey()
+    expect((await define(manager.page)).status()).toBe(403)
+    await owner.signInWithPasskey()
+    const response = await define(ownerPage)
+    expect(response.status()).toBe(201)
+    const change = await response.json() as Change
+    // Its sole owner asks, with nobody above the root group: the critical published delay.
+    expect(change).toMatchObject({ risk: 'critical', route: 'published-delay', state: 'delayed' })
+    await advance(ownerPage, 6 * DAY)
+    await maintain(ownerPage)
+    expect((await accessChangeOf(ownerPage, change.changeId)).state).toBe('delayed')
+    await advance(ownerPage, DAY + HOUR)
+    await maintain(ownerPage)
+    expect((await accessChangeOf(ownerPage, change.changeId)).state).toBe('applied')
+    const roles = await (await ownerPage.request.get(`/api/authorisation/tenants/${platform.group.tenantId}/roles`)).json()
+    expect(JSON.stringify(roles)).toContain('note-editor')
+  })
+
+  test('access administration: Authorisation\'s group access page renders through the composed members, names people through Profile, and meets WCAG 2.2 AA', async () => {
+    await manager.page.goto(`/groups/${accessTeam}/access`)
+    await expect(manager.page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(manager.page.locator(`[data-identity-id="${manager.principalId}"]`).first()).toBeVisible()
+    const results = await new AxeBuilder({ page: manager.page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+    expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
   })
 })

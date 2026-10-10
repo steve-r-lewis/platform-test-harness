@@ -6,6 +6,7 @@ import { PROFILE_PERMISSIONS } from '@nuxt4-layers/profile/contracts'
 import { IDENTITY_PERMISSIONS } from '@nuxt4-layers/identity/contracts'
 import {
   authenticationIdentityFromIdentity,
+  authorisationGovernanceFromIdentity,
   authorisationDirectoryFromIdentity,
   createAuthenticationEventHandler,
   createIdentityEventHandler,
@@ -101,8 +102,19 @@ export function deliverBreakGlassLink(identityId: string, link: string): void {
   console.info('[harness notifier] break-glass enrolment link to the platform operators')
 }
 
-/** Identity's and Profile's permissions, for Authorisation's catalogue and roles. */
-const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS]
+/**
+ * A stand-in domain capability's permissions, so that resources can be
+ * shared in the tests: notes owned by a group, viewed (low), edited
+ * (medium) or deleted (critical).
+ */
+const HARNESS_NOTE_PERMISSIONS = [
+  { name: 'harness-notes:view', description: 'See a note', risk: 'low', effect: 'view' },
+  { name: 'harness-notes:edit', description: 'Edit a note', risk: 'medium', effect: 'change' },
+  { name: 'harness-notes:delete', description: 'Delete a note', risk: 'critical', effect: 'change' }
+] as const
+
+/** Identity's, Profile's and the stand-in capability's permissions, for Authorisation's catalogue and roles. */
+const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS, ...HARNESS_NOTE_PERMISSIONS]
 
 /** Supplies Identity's policy: the harness tenant is every sign-up's home tenant. */
 export function applyIdentityPolicy(): void {
@@ -119,6 +131,15 @@ export async function relayIdentityNow(): Promise<void> {
   if (iamHarness.profile) {
     while (await relayProfileOutbox({ limit: 100, publish: publishProfileEvent }) > 0) { /* until empty */ }
   }
+  for (;;) {
+    const result = await relayAuthorisationOutbox({ limit: 100, publish: publishAuthorisationEvent })
+    if (result.published === 0 || result.failed > 0) break
+  }
+}
+
+/** Authorisation's events (changes requested, decided and applied): the test probes record them. */
+async function publishAuthorisationEvent(event: { type: string }): Promise<void> {
+  if (harnessTestMode) iamHarness.events.push(event as never)
 }
 
 /**
@@ -226,6 +247,24 @@ export default defineNitroPlugin((nitro) => {
   migrateAuthorisationDatabase()
   provideAuthorisationPermissions(PERMISSIONS.map(({ name, description, risk, effect }) => ({ name, description, risk, effect })))
   provideAuthorisationPolicy({ roles: rolesWithIdentityPermissions({ permissions: PERMISSIONS, roles: DEFAULT_AUTHORISATION_POLICY.roles }) })
+  // Identity's facts for Authorisation's approvals, and who is signed in for its endpoints.
+  provideAuthorisationGovernance(authorisationGovernanceFromIdentity({
+    governance: {
+      describeGroup: async (input) => {
+        await iamHarness.ready
+        return getIdentityAccessGovernance().describeGroup(input)
+      },
+      isOwner: async (input) => {
+        await iamHarness.ready
+        return getIdentityAccessGovernance().isOwner(input)
+      },
+      countOwners: async (input) => {
+        await iamHarness.ready
+        return getIdentityAccessGovernance().countOwners(input)
+      }
+    }
+  }))
+  provideAuthorisationSubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
   provideAuthorisationDirectory(authorisationDirectoryFromIdentity({
     directory: {
       resolveActor: async (id, options) => (await directory()).resolveActor(id, options),
@@ -253,6 +292,8 @@ export default defineNitroPlugin((nitro) => {
     recordRequestPart: iamHarness.profile ? recordProfileRequestPart : undefined,
     assignRole: assignAuthorisationRole,
     unassignRole: unassignAuthorisationRole,
+    // Each group's own default roles for new members and guests, from Authorisation.
+    defaultRoles: authorisationDefaultRoles,
     // After every break-glass use: a new passkey, enrolled through a link to the platform's operators.
     breakGlass: {
       rotate: rotateAuthenticationBreakGlass,
@@ -298,6 +339,7 @@ export default defineNitroPlugin((nitro) => {
     await iamHarness.ready
     await runIdentityMaintenance()
   })
+  every(60_000, 'Authorisation maintenance', () => runAuthorisationMaintenance())
   if (iamHarness.profile) {
     every(60_000, 'Profile key re-wrapping', () => rewrapProfileKeys())
     every(60_000, 'Profile maintenance', () => runProfileMaintenance())
