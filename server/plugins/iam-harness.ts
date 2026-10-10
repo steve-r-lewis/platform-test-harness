@@ -13,12 +13,14 @@ import {
   identityAccessDecisionFromAuthorisation,
   identityApprovalPolicyFromAuthorisation,
   identitySubjectResolverFromAuthentication,
+  invitationSenderFromIdentity,
   newCorrelationId,
   profileAccessDecisionFromAuthorisation,
   profileRequestCoordinatorFromMembers,
   reconcileCredentialRecoveries,
   rolesWithIdentityPermissions
 } from '@nuxt4-layers/iam-integration/adapters'
+import type { InvitationSender } from '@nuxt4-layers/iam-integration/adapters'
 import { harnessTestMode } from './authentication-harness'
 
 /**
@@ -60,9 +62,44 @@ export interface IamHarness {
   profile: boolean
   /** Verification codes Profile asked the harness to deliver, newest last (test mode only; never logged). */
   codes: { attribute: string, code: string }[]
+  /** Invitation links the harness delivered, newest last (test mode only; never logged). */
+  invitations: { address: string, link: string, kind: 'member' | 'guest' }[]
+  /** Break-glass enrolment links issued to the platform's operators, newest last (test mode only; never logged). */
+  breakGlassLinks: { identityId: string, link: string }[]
 }
 
-export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false, codes: [] }
+export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false, codes: [], invitations: [], breakGlassLinks: [] }
+
+/**
+ * The host's invitation delivery, through iam-integration's invitation
+ * sender: Identity issues an invitation bound to nobody, and the harness
+ * delivers the link. A real host sends it by email; the harness records it
+ * for the test probes and logs neither the address nor the link.
+ */
+export async function invitationSender(): Promise<InvitationSender> {
+  await iamHarness.ready
+  const base = process.env.NUXT_IDENTITY_BASE_URL
+  if (!base) throw Object.assign(new Error('NUXT_IDENTITY_BASE_URL is not set'), { code: 'unavailable' })
+  return invitationSenderFromIdentity({
+    joining: getIdentityJoining(),
+    acceptanceUrl: new URL('/invitations/accept', base).href,
+    async deliver({ address, link, kind }) {
+      if (harnessTestMode) iamHarness.invitations.push({ address, link, kind })
+      console.info(`[harness notifier] ${kind} invitation`)
+    }
+  })
+}
+
+/** Authentication's break-glass enrolment page, with the token in the fragment. */
+export function breakGlassEnrolmentLink(token: string): string {
+  return `${new URL('/break-glass/enrol', process.env.NUXT_IDENTITY_BASE_URL).href}#${token}`
+}
+
+/** Delivers a break-glass enrolment link to the platform's operators: recorded for the test probes, never logged. */
+export function deliverBreakGlassLink(identityId: string, link: string): void {
+  if (harnessTestMode) iamHarness.breakGlassLinks.push({ identityId, link })
+  console.info('[harness notifier] break-glass enrolment link to the platform operators')
+}
 
 /** Identity's and Profile's permissions, for Authorisation's catalogue and roles. */
 const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS]
@@ -151,6 +188,13 @@ export default defineNitroPlugin((nitro) => {
   const runtimeUrl = process.env.HARNESS_IDENTITY_DATABASE_URL
   if (!operator || !runtimeUrl) return
   iamHarness.operator = operator
+  // One clock for every member (iam-integration's architecture §7): in test
+  // mode, the harness clock the probe moves forward; otherwise the system clock.
+  if (harnessTestMode) {
+    provideIdentityClock(harnessClock)
+    provideAuthorisationClock(harnessClock)
+    provideProfileClock(harnessClock)
+  }
   const runtimeRole = decodeURIComponent(new URL(runtimeUrl).username)
 
   // Identity: migrated with the owner role, then used through the runtime role.
@@ -208,7 +252,15 @@ export default defineNitroPlugin((nitro) => {
     heldParts: iamHarness.profile ? profileLegalHoldParts : undefined,
     recordRequestPart: iamHarness.profile ? recordProfileRequestPart : undefined,
     assignRole: assignAuthorisationRole,
-    unassignRole: unassignAuthorisationRole
+    unassignRole: unassignAuthorisationRole,
+    // After every break-glass use: a new passkey, enrolled through a link to the platform's operators.
+    breakGlass: {
+      rotate: rotateAuthenticationBreakGlass,
+      enrolmentUrl: new URL('/break-glass/enrol', process.env.NUXT_IDENTITY_BASE_URL ?? 'http://localhost:3000').href,
+      async deliver({ identityId, link }) {
+        deliverBreakGlassLink(identityId, link)
+      }
+    }
   })
   provideIdentityEventPublisher({
     async publish(event) {
