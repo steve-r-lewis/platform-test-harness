@@ -17,6 +17,12 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
+      profile: {
+        routes: {
+          // Having one's data deleted is closing the account, on Identity's account page.
+          closeAccount: '/account/groups'
+        }
+      },
       themeManager: {
         creationTemplateId: 'test-theme',
         creationOwnerType: 'user',

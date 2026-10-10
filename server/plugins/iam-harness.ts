@@ -2,16 +2,20 @@ import pg from 'pg'
 import { DEFAULT_AUTHORISATION_POLICY } from '@nuxt4-layers/authorisation/contracts'
 import type { IdentityEvent } from '@nuxt4-layers/identity/contracts'
 import type { ProfileEvent } from '@nuxt4-layers/profile/contracts'
+import { PROFILE_PERMISSIONS } from '@nuxt4-layers/profile/contracts'
 import { IDENTITY_PERMISSIONS } from '@nuxt4-layers/identity/contracts'
 import {
   authenticationIdentityFromIdentity,
   authorisationDirectoryFromIdentity,
   createAuthenticationEventHandler,
   createIdentityEventHandler,
+  createProfileEventHandler,
   identityAccessDecisionFromAuthorisation,
   identityApprovalPolicyFromAuthorisation,
   identitySubjectResolverFromAuthentication,
   newCorrelationId,
+  profileAccessDecisionFromAuthorisation,
+  profileRequestCoordinatorFromMembers,
   reconcileCredentialRecoveries,
   rolesWithIdentityPermissions
 } from '@nuxt4-layers/iam-integration/adapters'
@@ -35,6 +39,11 @@ import { harnessTestMode } from './authentication-harness'
  * - HARNESS_PROFILE_MASTER_KEY     32 bytes, base64: the key that wraps each
  *                                  person's data key (a KMS in production)
  *
+ * Profile then coordinates data-subject requests across the members, keeps
+ * legal holds (which the Identity event handler honours on closure), sends
+ * verification codes through the harness's notifier, and asks Authorisation
+ * before naming a group's suspended members to its administrators.
+ *
  * Without them, the missing members' ports are absent and they fail closed,
  * and Authentication runs on its own, as before.
  */
@@ -49,9 +58,14 @@ export interface IamHarness {
   events: (IdentityEvent | ProfileEvent)[]
   /** Whether Profile is composed. */
   profile: boolean
+  /** Verification codes Profile asked the harness to deliver, newest last (test mode only; never logged). */
+  codes: { attribute: string, code: string }[]
 }
 
-export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false }
+export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false, codes: [] }
+
+/** Identity's and Profile's permissions, for Authorisation's catalogue and roles. */
+const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS]
 
 /** Supplies Identity's policy: the harness tenant is every sign-up's home tenant. */
 export function applyIdentityPolicy(): void {
@@ -70,8 +84,19 @@ export async function relayIdentityNow(): Promise<void> {
   }
 }
 
-/** Profile's events have no consumer in the harness yet; the test probes record them. */
+/**
+ * Profile's events: a legal hold that ends lets Authentication and
+ * Authorisation erase what it kept of a closed identity; the test probes
+ * record them all.
+ */
+const handleProfileEvent = createProfileEventHandler({
+  deleteAccount: deleteAuthenticationAccount,
+  erasePrincipal: eraseAuthorisationPrincipal,
+  recordRequestPart: recordProfileRequestPart
+})
+
 async function publishProfileEvent(event: ProfileEvent): Promise<void> {
+  await handleProfileEvent(event)
   if (harnessTestMode) iamHarness.events.push(event)
 }
 
@@ -99,6 +124,25 @@ function composeProfile(operator: pg.Pool): boolean {
     }
   })
   provideProfileSubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
+  // Data-subject requests: each member's export, through iam-integration's coordinator.
+  provideProfileRequestCoordinator(profileRequestCoordinatorFromMembers({
+    exportIdentity: async (input) => {
+      await iamHarness.ready
+      return exportIdentityData(input)
+    },
+    exportAuthentication: exportAuthenticationData,
+    exportAuthorisation: exportAuthorisationData
+  }))
+  // Whether a viewer may see a group's suspended members, from Authorisation.
+  provideProfileAccessDecision(profileAccessDecisionFromAuthorisation({ authorise }))
+  // Verification codes: a real host sends them by email or SMS. The harness
+  // records them for the test probes and logs neither the address nor the code.
+  provideProfileNotifier({
+    async send(message) {
+      if (harnessTestMode) iamHarness.codes.push({ attribute: message.attribute, code: message.code })
+      console.info(`[harness notifier] ${message.purpose} by ${message.channel}`)
+    }
+  })
   return true
 }
 
@@ -136,8 +180,8 @@ export default defineNitroPlugin((nitro) => {
   // Authorisation: its own schema; Identity's permissions in its catalogue and roles.
   provideAuthorisationDatabase({ dialect: 'postgres', pool: operator })
   migrateAuthorisationDatabase()
-  provideAuthorisationPermissions(IDENTITY_PERMISSIONS.map(({ name, description, risk, effect }) => ({ name, description, risk, effect })))
-  provideAuthorisationPolicy({ roles: rolesWithIdentityPermissions({ permissions: IDENTITY_PERMISSIONS, roles: DEFAULT_AUTHORISATION_POLICY.roles }) })
+  provideAuthorisationPermissions(PERMISSIONS.map(({ name, description, risk, effect }) => ({ name, description, risk, effect })))
+  provideAuthorisationPolicy({ roles: rolesWithIdentityPermissions({ permissions: PERMISSIONS, roles: DEFAULT_AUTHORISATION_POLICY.roles }) })
   provideAuthorisationDirectory(authorisationDirectoryFromIdentity({
     directory: {
       resolveActor: async (id, options) => (await directory()).resolveActor(id, options),
@@ -149,7 +193,7 @@ export default defineNitroPlugin((nitro) => {
   provideIdentitySubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
   provideIdentityAccessDecision(identityAccessDecisionFromAuthorisation({ authorise }))
   provideIdentityApprovalPolicy(identityApprovalPolicyFromAuthorisation({
-    riskOf: permission => IDENTITY_PERMISSIONS.find(definition => definition.name === permission)?.risk ?? null,
+    riskOf: permission => PERMISSIONS.find(definition => definition.name === permission)?.risk ?? null,
     qualifies: authorisationQualifies,
     countQualifying: countAuthorisationQualifying
   }))
@@ -159,6 +203,10 @@ export default defineNitroPlugin((nitro) => {
     revokeSessions: revokeAuthenticationSessions,
     discardAccount: discardAuthenticationAccount,
     deleteAccount: deleteAuthenticationAccount,
+    erasePrincipal: eraseAuthorisationPrincipal,
+    // Legal holds and data-subject requests are Profile's.
+    heldParts: iamHarness.profile ? profileLegalHoldParts : undefined,
+    recordRequestPart: iamHarness.profile ? recordProfileRequestPart : undefined,
     assignRole: assignAuthorisationRole,
     unassignRole: unassignAuthorisationRole
   })
@@ -200,6 +248,7 @@ export default defineNitroPlugin((nitro) => {
   })
   if (iamHarness.profile) {
     every(60_000, 'Profile key re-wrapping', () => rewrapProfileKeys())
+    every(60_000, 'Profile maintenance', () => runProfileMaintenance())
   }
   every(60_000, 'credential recovery reconciliation', async () => {
     const result = await reconcileCredentialRecoveries({ list: listAuthenticationCredentialRecoveries, record, after: recoveryCursor })

@@ -173,6 +173,103 @@ test.describe.serial('IAM suite', () => {
     }
   })
 
+  test('data-subject access: Profile gathers every member\'s part into one archive, for the person only', async ({ browser }) => {
+    const member = await anotherPerson(browser)
+    const outsider = await anotherPerson(browser)
+    try {
+      const asked = await member.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
+      const { joinRequestId } = await asked.json()
+      expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
+      await relay(ownerPage)
+
+      const opened = await member.page.request.post('/api/profile/me/requests', { data: { type: 'access' }, headers })
+      expect(opened.status()).toBe(201)
+      const request = await opened.json() as { requestId: string, status: string, parts: { part: string, status: string }[] }
+      expect(request.status).toBe('completed')
+      expect(request.parts.map(part => `${part.part}:${part.status}`)).toEqual(['profile:done', 'identity:done', 'authentication:done', 'authorisation:done'])
+
+      const archive = await member.page.request.get(`/api/profile/me/requests/${request.requestId}/archive`)
+      expect(archive.status()).toBe(200)
+      expect(archive.headers()['cache-control']).toBe('no-store')
+      const { parts } = await archive.json() as {
+        parts: {
+          profile: { settings: unknown }
+          identity: { identity: { identityId: string }, memberships: { groupId: string }[] }
+          authentication: { signInIdentifiers: unknown[], password: unknown }
+          authorisation: { roleAssignments: unknown[] }
+        }
+      }
+      // Each member answers for what it holds, through iam-integration's coordinator.
+      expect(parts.identity.identity.identityId).toBe(member.principalId)
+      expect(parts.identity.memberships.map(m => m.groupId)).toContain(platformGroupId)
+      expect(parts.authentication.signInIdentifiers).toEqual([expect.objectContaining({ kind: 'email', value: member.email, verified: true })])
+      expect(parts.authentication.password).toEqual({ set: true })
+      expect(parts.authorisation.roleAssignments).toEqual(expect.arrayContaining([expect.objectContaining({ principalId: member.principalId, groupId: platformGroupId })]))
+      expect(parts.profile.settings).toBeTruthy()
+      // Nothing that would let anyone sign in as the person, and nobody else's address.
+      const text = JSON.stringify(parts)
+      expect(text).not.toMatch(/token|secret|\$argon|scrypt|ipAddress/i)
+      expect(text).not.toContain(outsider.email)
+
+      expect((await outsider.page.request.get(`/api/profile/me/requests/${request.requestId}/archive`)).status()).toBe(403)
+      await relay(ownerPage)
+      const events = await (await ownerPage.request.get('/api/__harness/iam/events')).json() as { type: string, data: Record<string, unknown> }[]
+      expect(events.filter(e => e.type === 'profile.request-completed').map(e => e.data.requestId)).toContain(request.requestId)
+      expect(JSON.stringify(events)).not.toContain(member.email)
+    } finally {
+      await member.close()
+      await outsider.close()
+    }
+  })
+
+  test('contact verification: Profile sends a code through the host, and the detail is verified until it changes', async ({ browser }) => {
+    const person = await anotherPerson(browser)
+    try {
+      const own = await (await person.page.request.get('/api/profile/me')).json() as { version: number }
+      const saved = await person.page.request.patch('/api/profile/me', { data: { expectedVersion: own.version, changes: { email: 'contact@example.org' } }, headers })
+      expect(saved.status()).toBe(200)
+      const sent = await person.page.request.post('/api/profile/me/verification/email/send', { headers })
+      expect(await sent.json()).toMatchObject({ attribute: 'email', status: 'sent' })
+      const codes = await (await person.page.request.get('/api/__harness/iam/codes')).json() as { attribute: string, code: string }[]
+      const confirmed = await person.page.request.post('/api/profile/me/verification/email/confirm', { data: { code: codes.at(-1)!.code }, headers })
+      expect(confirmed.status()).toBe(200)
+      expect((await confirmed.json()).attributes).toMatchObject({ email: 'contact@example.org', email_verified: true })
+    } finally {
+      await person.close()
+    }
+  })
+
+  test('leaving a group: Profile lists it under Identity\'s name, and the person may be anonymous there', async ({ browser }) => {
+    const leaver = await anotherPerson(browser)
+    try {
+      const asked = await leaver.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
+      const { joinRequestId } = await asked.json()
+      expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
+      await relay(ownerPage)
+      const me = await (await leaver.page.request.get('/api/identity/me')).json() as { actor: { memberships: { membershipId: string, group: { groupId: string } }[] } }
+      const { membershipId } = me.actor.memberships.find(m => m.group.groupId === platformGroupId)!
+      expect((await leaver.page.request.post(`/api/identity/memberships/${membershipId}/leave`, { headers })).status()).toBe(200)
+      await relay(ownerPage)
+
+      // Identity names the group the person left; the host's ProfileGroupName shows it on Profile's page.
+      const self = await (await leaver.page.request.get('/api/identity/me')).json() as { formerGroupNames: { groupId: string, name: string }[] }
+      const formerName = self.formerGroupNames.find(group => group.groupId === platformGroupId)!.name
+      await leaver.page.goto('/profile/departures')
+      await expect(leaver.page.locator(`[data-group-id="${platformGroupId}"]`)).toHaveText(formerName)
+      const results = await new AxeBuilder({ page: leaver.page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+      expect(results.violations.map(v => v.id)).toEqual([])
+
+      await leaver.page.getByRole('button', { name: 'Show me as "Former member" here' }).click()
+      await leaver.page.getByRole('button', { name: 'Yes, show me as "Former member"' }).click()
+      await expect(leaver.page.getByText('Shown as "Former member"', { exact: true })).toBeVisible()
+      // The group's members now see "Former member" for them, whatever the group's policy.
+      const names = await (await ownerPage.request.post('/api/profile/display-names', { data: { subjectIds: [leaver.principalId], groupId: platformGroupId, purpose: 'attribution' }, headers })).json()
+      expect(names).toEqual([{ subjectId: leaver.principalId, displayName: { kind: 'former-member' } }])
+    } finally {
+      await leaver.close()
+    }
+  })
+
   test('pausing: Identity\'s pause ends the person\'s sessions, and they return only to resume', async ({ browser }) => {
     const person = await anotherPerson(browser)
     try {
