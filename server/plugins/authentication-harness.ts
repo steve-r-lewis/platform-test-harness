@@ -44,5 +44,7 @@ export default defineNitroPlugin(() => {
 
   if (harnessTestMode) {
     provideAuthenticationPolicy({ password: { compromisedCheck: 'disabled' } })
+    // The suite's one clock, shared with the IAM members (server/utils/harness-clock.ts).
+    provideAuthenticationClock(harnessClock)
   }
 })
