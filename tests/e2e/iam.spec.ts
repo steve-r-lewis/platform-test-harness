@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { lastLink, ORIGIN, PASSWORD, recorder, signInAtAal2, verifiedAccount } from './support/authentication'
 import type { AssignmentView, Change, Person } from './support/iam'
-import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, personWithPasskey, requestAccessChange, requestChange } from './support/iam'
+import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, MINUTE, personWithPasskey, personWithPassword, requestAccessChange, requestChange } from './support/iam'
 
 /**
  * The IAM suite composed: Identity, Authentication and Authorisation,
@@ -1064,5 +1064,183 @@ test.describe.serial('IAM suite', () => {
     await expect(manager.page.locator(`[data-identity-id="${manager.principalId}"]`).first()).toBeVisible()
     const results = await new AxeBuilder({ page: manager.page }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
     expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
+  })
+
+  // ---------------------------------------------------------------------------
+  // End of life (iam-integration docs/processes/group-deletion.md,
+  // tenant-lifecycle.md and retention.md). Last: they move the clock by months.
+  // ---------------------------------------------------------------------------
+
+  /** Waits out a delayed change's published delay, so that maintenance applies it; answers the change as it now stands. */
+  async function settle(page: Page, change: Change): Promise<Change> {
+    const current = await changeOf(page, change.changeId)
+    if (current.state === 'delayed') {
+      const wait = Date.parse(current.delayEndsAt!) - (await clockNow(page)).getTime()
+      if (wait > 0) await advance(page, wait + MINUTE)
+      await maintain(page)
+    }
+    return changeOf(page, change.changeId)
+  }
+
+  /** A platform change the platform group's sole owner requests: nobody else can approve it, so it waits out the published delay. */
+  async function platformChange(request: { type: string, target: Record<string, unknown> }): Promise<Change & { createdId: string | null }> {
+    await owner.signInWithPasskey()
+    const response = await requestChange(ownerPage, request)
+    expect(response.status()).toBe(201)
+    const change = await response.json() as Change & { createdId: string | null }
+    expect(change.route).toBe('published-delay')
+    expect(await settle(ownerPage, change)).toMatchObject({ state: 'applied' })
+    return { ...change, ...(await changeOf(ownerPage, change.changeId)) }
+  }
+
+  const disposalOf = async (kind: 'group' | 'tenant', id: string) =>
+    (await (await ownerPage.request.get(`/api/__harness/iam/disposal?kind=${kind}&id=${id}`)).json()).disposal as { state: string, confirmedBy: string[] } | null
+
+  test('group deletion: an archived group is deleted with approval, confers nothing at once, and every member disposes of it; a held one waits for its hold', async ({ browser }) => {
+    const groupOwner = await personWithPasskey(browser)
+    const member = await personWithPassword(browser)
+    try {
+      await join(groupOwner.page, ownerPage, platformGroupId)
+      const doomed = await createGroup(groupOwner.page, platformGroupId, 'Doomed Team')
+      const held = await createGroup(groupOwner.page, platformGroupId, 'Held Team')
+      for (const groupId of [doomed, held]) await join(member.page, groupOwner.page, groupId)
+
+      // Only an archived group can be deleted.
+      await groupOwner.signInWithPasskey()
+      expect((await requestChange(groupOwner.page, { type: 'group.delete', target: { groupId: doomed } })).status()).toBe(409)
+      for (const groupId of [doomed, held]) {
+        await groupOwner.signInWithPasskey()
+        const archive = await (await requestChange(groupOwner.page, { type: 'group.archive', target: { groupId } })).json() as Change
+        expect(archive.route).toBe('parent-owner')
+        await owner.signInWithPasskey()
+        expect((await decide(ownerPage, archive)).status()).toBe(200)
+        expect(await settle(ownerPage, archive)).toMatchObject({ state: 'applied' })
+      }
+
+      // An operator's hold on one of them, through the platform group; it waits out the published delay, as the archives must before deletion.
+      const endsAt = new Date((await clockNow(ownerPage)).getTime() + 90 * DAY).toISOString()
+      const hold = await platformChange({ type: 'legal-hold.place', target: { subjectKind: 'group', subjectId: held, endsAt } })
+      expect(hold.createdId).toBeTruthy()
+      await relay(ownerPage)
+
+      // Deletion: the sole owner asks, an owner of the parent group approves.
+      const deleted: Record<string, Change> = {}
+      for (const groupId of [doomed, held]) {
+        await groupOwner.signInWithPasskey()
+        const response = await requestChange(groupOwner.page, { type: 'group.delete', target: { groupId } })
+        expect(response.status()).toBe(201)
+        deleted[groupId] = await response.json() as Change
+        expect(deleted[groupId]!.route).toBe('parent-owner')
+        await owner.signInWithPasskey()
+        expect((await decide(ownerPage, deleted[groupId]!)).status()).toBe(200)
+        expect(await settle(ownerPage, deleted[groupId]!)).toMatchObject({ state: 'applied' })
+      }
+
+      // At once, before any member has disposed of anything: the group confers nothing and its memberships have ended.
+      expect((await groupOwner.page.request.get(`/api/identity/groups/${doomed}`)).status()).toBe(403)
+      expect(await membershipIn(member.page, doomed)).toBeUndefined()
+
+      await relay(ownerPage)
+      const published = await events(ownerPage)
+      expect(published.find(e => e.type === 'group.deleted' && e.data.groupId === doomed)?.data).toMatchObject({ disposal: 'due' })
+      expect(published.find(e => e.type === 'group.deleted' && e.data.groupId === held)?.data).toMatchObject({ disposal: 'deferred' })
+
+      // Every participant disposes of the due group and Identity records each confirmation.
+      await expect.poll(async () => (await disposalOf('group', doomed))?.confirmedBy.toSorted()).toEqual(['authorisation', 'identity', 'profile'])
+      expect(published.filter(e => /\.group-disposed$/.test(e.type) && e.data.groupId === doomed).map(e => e.type).toSorted())
+        .toEqual(['authorisation.group-disposed', 'profile.group-disposed'])
+      const holdings = await (await ownerPage.request.get(`/api/__harness/iam/holdings?identityId=${member.principalId}`)).json() as { authorisation: { roleAssignments: { groupId: string }[] } | null }
+      expect(holdings.authorisation?.roleAssignments.filter(a => a.groupId === doomed || a.groupId === held) ?? []).toEqual([])
+
+      // The held group is deleted but kept: nobody disposes of it until the hold ends.
+      expect(await disposalOf('group', held)).toMatchObject({ state: 'deferred', confirmedBy: [] })
+      expect(published.some(e => /\.group-disposed$/.test(e.type) && e.data.groupId === held)).toBe(false)
+      await platformChange({ type: 'legal-hold.release', target: { holdId: hold.createdId } })
+      await relay(ownerPage)
+      await expect.poll(async () => (await disposalOf('group', held))?.confirmedBy.toSorted()).toEqual(['authorisation', 'identity', 'profile'])
+      const after = await events(ownerPage)
+      expect(after.some(e => e.type === 'legal-hold.ended' && e.data.endedHow === 'released')).toBe(true)
+      expect(after.some(e => e.type === 'group.disposal-due' && e.data.groupId === held)).toBe(true)
+    } finally {
+      await groupOwner.close()
+      await member.close()
+    }
+  })
+
+  test('tenant lifecycle: a tenant\'s owner asks to shut it, only a platform operator approves, its owner exports its governance records, and at the end of the notice every group in it goes', async ({ browser }) => {
+    const tenantOwner = await personWithPasskey(browser)
+    const outsider = await personWithPasskey(browser)
+    try {
+      const provisioned = await ownerPage.request.post('/api/__harness/iam/tenants', { data: { ownerId: tenantOwner.principalId, name: 'Closing Root' }, headers })
+      expect(provisioned.status()).toBe(200)
+      const { tenantId, groupId: root } = await provisioned.json() as { tenantId: string, groupId: string }
+      const child = await createGroup(tenantOwner.page, root, 'Closing Team')
+      const exportOf = (page: Page) => page.request.get(`/api/tenants/${tenantId}/export`)
+
+      // Nothing to export before the tenant is closing.
+      await tenantOwner.signInWithPasskey()
+      expect((await exportOf(tenantOwner.page)).status()).toBe(409)
+
+      // The platform group's own tenant is never closed.
+      await owner.signInWithPasskey()
+      const platform = await (await ownerPage.request.get(`/api/identity/groups/${platformGroupId}`)).json() as { group: { tenantId: string } }
+      expect((await requestChange(ownerPage, { type: 'tenant.close', target: { tenantId: platform.group.tenantId } })).status()).toBe(409)
+
+      await tenantOwner.signInWithPasskey()
+      const requested = await requestChange(tenantOwner.page, { type: 'tenant.close', target: { tenantId } })
+      expect(requested.status()).toBe(201)
+      const close = await requested.json() as Change
+      // Decided in the platform group: never by the tenant's own owner.
+      expect((await decide(tenantOwner.page, close)).status()).not.toBe(200)
+      await owner.signInWithPasskey()
+      expect((await decide(ownerPage, close)).status()).toBe(200)
+      expect(await settle(ownerPage, close)).toMatchObject({ state: 'applied' })
+      await relay(ownerPage)
+      const closing = (await events(ownerPage)).find(e => e.type === 'tenant.closing' && e.data.tenantId === tenantId)
+      expect(closing).toBeDefined()
+
+      // During the notice: nothing new in the tenant, and its owner (only) may export it, with no personal data.
+      await tenantOwner.signInWithPasskey()
+      expect((await tenantOwner.page.request.post('/api/identity/groups', { data: { parentGroupId: root, name: 'Too Late' }, headers })).status()).toBe(409)
+      const exported = await exportOf(tenantOwner.page)
+      expect(exported.status()).toBe(200)
+      expect(exported.headers()['cache-control']).toBe('no-store')
+      const records = await exported.json() as { identity: { groups: { groupId: string }[] }, authorisation: unknown }
+      expect(records.identity.groups.map(g => g.groupId)).toEqual(expect.arrayContaining([root, child]))
+      expect(records.authorisation).not.toBeNull()
+      const text = JSON.stringify(records)
+      expect(text).not.toContain(tenantOwner.email)
+      expect(text).not.toContain('@')
+      await outsider.signInWithPasskey()
+      expect((await exportOf(outsider.page)).status()).toBe(403)
+
+      // The notice ends: every group in the tenant is deleted and disposed of; the owner keeps their identity and sign-in.
+      await advance(ownerPage, Date.parse(closing!.data.closesAt as string) - (await clockNow(ownerPage)).getTime() + HOUR)
+      await maintain(ownerPage)
+      await relay(ownerPage)
+      const published = await events(ownerPage)
+      expect(published.find(e => e.type === 'tenant.closed' && e.data.tenantId === tenantId)?.data).toMatchObject({ disposal: 'due' })
+      expect(published.filter(e => e.type === 'group.deleted' && (e.data.groupId === root || e.data.groupId === child))).toHaveLength(2)
+      await expect.poll(async () => (await disposalOf('tenant', tenantId))?.confirmedBy).toContain('authorisation')
+      expect(published.some(e => e.type === 'authorisation.tenant-disposed' && e.data.tenantId === tenantId)).toBe(true)
+      expect((await tenantOwner.page.request.get(`/api/identity/groups/${root}`)).status()).toBe(403)
+      await tenantOwner.signInWithPasskey()
+      expect((await (await tenantOwner.page.request.get('/api/identity/me')).json()).actor.identityState).toBe('active')
+    } finally {
+      await tenantOwner.close()
+      await outsider.close()
+    }
+  })
+
+  test('retention: each member deletes what its schedules let go, and announces counts only', async () => {
+    const before = (await events(ownerPage)).length
+    await advance(ownerPage, 400 * DAY)
+    await maintain(ownerPage)
+    const applied = (await events(ownerPage)).slice(before).filter(e => /\.retention-applied$/.test(e.type))
+    // Delivered outbox events are past their 30 days in every member with an outbox.
+    expect(applied.map(e => e.type)).toEqual(expect.arrayContaining(['identity.retention-applied', 'authorisation.retention-applied']))
+    // Counts only (Identity nests them under `counts`): never an identifier.
+    const leaves = (value: unknown): unknown[] => typeof value === 'object' && value !== null ? Object.values(value).flatMap(leaves) : [value]
+    for (const event of applied) expect(leaves(event.data).every(value => typeof value === 'number')).toBe(true)
   })
 })
