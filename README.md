@@ -30,11 +30,11 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Layer | Commit |
 |---|---|
 | Theme Manager | `3f928bcf80bd6e32e0aa991fe0115096a1fe6280` |
-| Authentication | `24d57ae10f05695b84e03da656aaa5cd58b8ff2f` (0.6.0 with the identity port and credential recovery records) |
-| Identity | `41dbcf27c75c7da24072938a0ef051bf9b1d59d9` (0.1.0 with permission effects) |
-| Authorisation | `dea93792aac7b5d6682a820fd7edd67ab2d9e4c8` (0.3.0, contract 3: view-only paused members) |
-| Profile | `b03787c1d6ed4fa4ed418c688bf2ec17600b5a0e` (0.3.0, encrypted records, the `/api/profile/*` endpoints, default pages and `ProfilePersonName`) |
-| IAM integration | `eb29ef17b5c96afdfa30cc2235df899bd95062d9` (0.1.0, reference adapters; Identity's events forwarded to Profile) |
+| Authentication | `064e66824c50c696f6f0c9f95097541dc57f92d4` (0.6.0 with the identity port, credential recovery records and its data-subject export) |
+| Identity | `ee43a6a9fa2319cc44b3a1c00a105fe565352bf2` (0.1.0 with permission effects and the names of groups a person left) |
+| Authorisation | `5eedb7a8a651be725b99f1c9169acc879259ead6` (0.3.0, contract 3: view-only paused members; export and erasure of a principal) |
+| Profile | `74db91a962264beebd4cb9367441dce95e36e0d0` (0.4.0, phase 4: data-subject requests and legal holds, contact-detail verification, the administrators' view of suspended members, the departures and requests pages) |
+| IAM integration | `a3a414350c951bd2fba7acbb893962e4a62ae81d` (0.1.0, reference adapters; Identity's events forwarded to Profile; Profile's request coordination and access decision; legal holds on closure) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
@@ -73,14 +73,18 @@ Profile joins when `HARNESS_PROFILE_DATABASE_URL` (its own runtime role, which o
 | Identity's access decision and approval policy | Authorisation's `authorise`, `authorisationQualifies` and `countAuthorisationQualifying` |
 | Authorisation's directory | Identity's directory (`paused` passed through: view-only under Authorisation contract 3) |
 | Authorisation's catalogue and roles | Identity's permissions, named in the `owner` and `administrator` roles |
-| Identity's event publisher | The adapters' event handler: Profile's records created, departures kept and records erased; sessions revoked, accounts discarded or deleted, `owner` and membership roles kept in step |
+| Identity's event publisher | The adapters' event handler: Profile's records created, departures kept and records erased (unless held); sessions revoked, accounts discarded or deleted, Authorisation's principal erased on closure (unless held), `owner` and membership roles kept in step |
 | Profile's subject resolver | Authentication's `getAuthenticatedPrincipal` |
 | Profile's disclosure context | Identity's disclosure-context port |
 | Profile's key wrapper | Profile's local wrapper over `HARNESS_PROFILE_MASTER_KEY` |
-| Identity's `IdentityPersonName` | The harness's own component (`app/components/IdentityPersonName.vue`): names from Profile, as the signed-in viewer may see them, with each page's names batched into one lookup |
+| Profile's request coordinator | `profileRequestCoordinatorFromMembers` over Identity's, Authentication's and Authorisation's exports |
+| Profile's access decision | `profileAccessDecisionFromAuthorisation` over `authorise`, with Profile's permission in Authorisation's catalogue and roles |
+| Profile's notifier | The harness's own: records verification codes in test mode, and logs neither the address nor the code |
+| Profile's `ProfileGroupName` | The harness's own component (`app/components/ProfileGroupName.vue`): the names of groups a person left, from Identity's `GET /api/identity/me` |
+| Identity's `IdentityPersonName` | The harness's own component (`app/components/IdentityPersonName.vue`): names from Profile, as the signed-in viewer may see them, with each page's names batched into one lookup; on a group's pages as an administration listing, so the group's administrators see suspended members |
 | Credential recovery | Authentication's `credentials-recovered` event, and reconciliation from its records every minute |
 
-At start-up the harness migrates Identity and provisions one tenant, every sign-up's home tenant. It relays Identity's and Profile's outboxes every two seconds, runs Identity's maintenance every minute, and re-wraps Profile's keys every minute (a no-op until the master key's version changes). Profile's events have no consumer yet; in test mode they are recorded with Identity's. In test mode, `POST /api/__harness/iam/bootstrap` stands in for the operator's procedure that founds the platform group, `POST /api/__harness/iam/relay` relays at once, and `GET /api/__harness/iam/events` lists the relayed events.
+At start-up the harness migrates Identity and provisions one tenant, every sign-up's home tenant. It relays Identity's and Profile's outboxes every two seconds, runs Identity's maintenance every minute, re-wraps Profile's keys every minute (a no-op until the master key's version changes), and runs Profile's maintenance every minute. Profile's events go to iam-integration's Profile event handler (erasures a legal hold deferred); in test mode they are recorded with Identity's. In test mode, `POST /api/__harness/iam/bootstrap` stands in for the operator's procedure that founds the platform group, `POST /api/__harness/iam/relay` relays at once, `GET /api/__harness/iam/events` lists the relayed events, and `GET /api/__harness/iam/codes` lists the verification codes Profile asked to send.
 
 `tests/e2e/iam.spec.ts` follows the processes across the members: provisioning, Authorisation deciding Identity's permissions from roles that follow Identity's owners, Identity's pages through the composition (WCAG 2.2 AA), a paused member viewing but not changing, Profile showing a person's chosen name to a fellow member (through its API and on Identity's group page) and nothing to an outsider, pausing ending sessions, and events carrying opaque identifiers only.
 
