@@ -149,6 +149,18 @@ test.describe.serial('IAM suite', () => {
       // The member set no name: Profile shows the neutral fallback.
       await expect(member.page.locator(`[data-identity-id="${member.principalId}"]`).first()).toHaveText('Member')
 
+      // Profile's own pages: the member sees the owner's profile as disclosed to them, never more.
+      await member.page.goto(`/profile/people/${ownerId}?groupId=${platformGroupId}`)
+      await expect(member.page.getByRole('heading', { level: 1, name: 'Ada Harness' })).toBeVisible()
+      await expect(member.page).toHaveTitle('Profile')
+      await outsider.page.goto(`/profile/people/${ownerId}`)
+      await expect(outsider.page.getByText('This profile is not available to you.')).toBeVisible()
+      // The owner's own page shows what they set, and nothing Authentication holds.
+      await ownerPage.goto('/profile')
+      const details = ownerPage.getByRole('region', { name: 'Your details', exact: true })
+      await expect(details.getByLabel('Full name')).toHaveValue('Ada Harness')
+      await expect(details.getByLabel('Contact email')).toHaveValue('')
+
       // Profile's events carry identifiers and attribute names, never the name itself.
       await relay(ownerPage)
       const events = await (await ownerPage.request.get('/api/__harness/iam/events')).json() as { type: string, data: Record<string, unknown> }[]
