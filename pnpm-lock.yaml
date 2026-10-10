@@ -176,20 +176,20 @@ importers:
         specifier: ^4.11.1
         version: 4.11.2(93788a16d5f7d73ab177980e5e857990)
       '@nuxt4-layers/authentication':
-        specifier: git+https://github.com/nuxt4-layers/authentication.git#2c2f0c42ffb44924c95ab81546ce68816dab7491
-        version: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/2c2f0c42ffb44924c95ab81546ce68816dab7491(1984ed7af82b11f193406bca05676db9)
+        specifier: git+https://github.com/nuxt4-layers/authentication.git#957205e8784c3894df93ecc3a7307f8939b43eb8
+        version: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/957205e8784c3894df93ecc3a7307f8939b43eb8(1984ed7af82b11f193406bca05676db9)
       '@nuxt4-layers/authorisation':
-        specifier: git+https://github.com/nuxt4-layers/authorisation.git#8fd3527a1f332373d47b1da136dd6b1895797f63
-        version: https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/8fd3527a1f332373d47b1da136dd6b1895797f63(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
+        specifier: git+https://github.com/nuxt4-layers/authorisation.git#aba2b08494297a6ace05f3cd03ff7d90dfadeb8a
+        version: https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/aba2b08494297a6ace05f3cd03ff7d90dfadeb8a(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
       '@nuxt4-layers/iam-integration':
-        specifier: git+https://github.com/nuxt4-layers/iam-integration.git#35e86ab288fed79848b513a98cfbd98304a3cb26
-        version: https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/35e86ab288fed79848b513a98cfbd98304a3cb26
+        specifier: git+https://github.com/nuxt4-layers/iam-integration.git#a97336969aee9a7d21277035de69816ce8dc35e6
+        version: https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/a97336969aee9a7d21277035de69816ce8dc35e6
       '@nuxt4-layers/identity':
-        specifier: git+https://github.com/nuxt4-layers/identity.git#8d6a7a03bfbadcab583f0f9ad0dc3975bb93d4dc
-        version: https://codeload.github.com/nuxt4-layers/identity/tar.gz/8d6a7a03bfbadcab583f0f9ad0dc3975bb93d4dc(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
+        specifier: git+https://github.com/nuxt4-layers/identity.git#9c25d71a7afd3069ef0f0e2decb9f3eef5706edf
+        version: https://codeload.github.com/nuxt4-layers/identity/tar.gz/9c25d71a7afd3069ef0f0e2decb9f3eef5706edf(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
       '@nuxt4-layers/profile':
-        specifier: git+https://github.com/nuxt4-layers/profile.git#7d6a1bb12b869e5ccb1a9c4499ea6e3fc8c88ab2
-        version: https://codeload.github.com/nuxt4-layers/profile/tar.gz/7d6a1bb12b869e5ccb1a9c4499ea6e3fc8c88ab2(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
+        specifier: git+https://github.com/nuxt4-layers/profile.git#37da8176ee9dec09b98e17b2527fdffd543e0f81
+        version: https://codeload.github.com/nuxt4-layers/profile/tar.gz/37da8176ee9dec09b98e17b2527fdffd543e0f81(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))
       '@nuxt4-layers/theme-manager':
         specifier: git+https://github.com/nuxt4-layers/theme-manager.git#v0.2.1
         version: git+https://github.com/nuxt4-layers/theme-manager.git#e63274dd0fa8801090252e7f07ecfa4145a3ea6b
@@ -1230,34 +1230,34 @@ packages:
       rollup-plugin-visualizer:
         optional: true
 
-  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/2c2f0c42ffb44924c95ab81546ce68816dab7491':
-    resolution: {gitHosted: true, integrity: sha512-sNrpKZZkpqEebQiG31EZWYWIz6ETx16tm+OEBQqGE6l3Nf9opVEXgTxD8Mx8VCxX4sYBTpJmk0WqQGgejh8IQA==, tarball: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/2c2f0c42ffb44924c95ab81546ce68816dab7491}
+  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/957205e8784c3894df93ecc3a7307f8939b43eb8':
+    resolution: {gitHosted: true, integrity: sha512-tehgNoARsNENKUtCOMSkEDP/rsbobJG8BYvd6orJ8V/g6G3i0pe2D8QbpwjiGtSVNA79+yKF+7yLonIuVHJjDQ==, tarball: https://codeload.github.com/nuxt4-layers/authentication/tar.gz/957205e8784c3894df93ecc3a7307f8939b43eb8}
     version: 0.6.0
     engines: {node: '>=22'}
     peerDependencies:
       nuxt: ^4.5.0
 
-  '@nuxt4-layers/authorisation@https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/8fd3527a1f332373d47b1da136dd6b1895797f63':
-    resolution: {gitHosted: true, integrity: sha512-tBL9LMBS2QOfu8g2p5clcvGgwPufByYw0lYXPvhOyePi9l76VI5Em874Lul0+h85bpZH3MD2U+s25xCzRtcHPw==, tarball: https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/8fd3527a1f332373d47b1da136dd6b1895797f63}
+  '@nuxt4-layers/authorisation@https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/aba2b08494297a6ace05f3cd03ff7d90dfadeb8a':
+    resolution: {gitHosted: true, integrity: sha512-UIwJLvFn8MsLka2hkBuyeI2cEdlB1KbcxozdanorOpdLQkcPNAESK88YoR3BR9dLp7mb2EcbVlie6QY6Uwj7zQ==, tarball: https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/aba2b08494297a6ace05f3cd03ff7d90dfadeb8a}
     version: 0.4.0
     engines: {node: '>=22'}
     peerDependencies:
       nuxt: ^4.5.0
 
-  '@nuxt4-layers/iam-integration@https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/35e86ab288fed79848b513a98cfbd98304a3cb26':
-    resolution: {gitHosted: true, integrity: sha512-edHTgKbyaxajLGZt9W5F0mQmj5HjwEkmaUWmnbWv8SHGNxA0834jiXkZZRaoQoctkiwI+twdP6Ikc/AphVQFDQ==, tarball: https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/35e86ab288fed79848b513a98cfbd98304a3cb26}
+  '@nuxt4-layers/iam-integration@https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/a97336969aee9a7d21277035de69816ce8dc35e6':
+    resolution: {gitHosted: true, integrity: sha512-Tvg+xZxjcJaLk76A1PsPMCyozwhaq3yFMrXOFMIdTnxCOX0FlhlubEemBito3c6Ulgag6l0A6T4jssHYcqzt6g==, tarball: https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/a97336969aee9a7d21277035de69816ce8dc35e6}
     version: 0.1.0
     engines: {node: '>=22'}
 
-  '@nuxt4-layers/identity@https://codeload.github.com/nuxt4-layers/identity/tar.gz/8d6a7a03bfbadcab583f0f9ad0dc3975bb93d4dc':
-    resolution: {gitHosted: true, integrity: sha512-o2RNuRjnvZygJU0+F3ZG8LqQdrKEVrhFHg0LJmz5fSpDSbmlELd5VkVtFESDZbqDRXDvztcFMM9prgeAJp9NDw==, tarball: https://codeload.github.com/nuxt4-layers/identity/tar.gz/8d6a7a03bfbadcab583f0f9ad0dc3975bb93d4dc}
+  '@nuxt4-layers/identity@https://codeload.github.com/nuxt4-layers/identity/tar.gz/9c25d71a7afd3069ef0f0e2decb9f3eef5706edf':
+    resolution: {gitHosted: true, integrity: sha512-B/kYZFlzTsuek8nPDGGDtCdrxxE/hSGqT0tQdbO75CEWJo4S2wLGiwc7C6s8jDwXhDp87q7c7O0YEiGJRkpYeg==, tarball: https://codeload.github.com/nuxt4-layers/identity/tar.gz/9c25d71a7afd3069ef0f0e2decb9f3eef5706edf}
     version: 0.1.0
     engines: {node: '>=22'}
     peerDependencies:
       nuxt: ^4.5.0
 
-  '@nuxt4-layers/profile@https://codeload.github.com/nuxt4-layers/profile/tar.gz/7d6a1bb12b869e5ccb1a9c4499ea6e3fc8c88ab2':
-    resolution: {gitHosted: true, integrity: sha512-W9FEQH5sBRWZe4y1gDd+W//wDWtxRRKM7epqiFPwLnCMK4rrM0DtK6yQ9ubHm/6EznWHUBuMacLfzOYjFR4JiQ==, tarball: https://codeload.github.com/nuxt4-layers/profile/tar.gz/7d6a1bb12b869e5ccb1a9c4499ea6e3fc8c88ab2}
+  '@nuxt4-layers/profile@https://codeload.github.com/nuxt4-layers/profile/tar.gz/37da8176ee9dec09b98e17b2527fdffd543e0f81':
+    resolution: {gitHosted: true, integrity: sha512-uZM5zNbrHX0qvPe8U51TD6fkjzaGNE2IRmpYZ8sS5Kr40zUrEywexfUDzZP4/vsiSsZSEuFyqmw0qXvm0gZpVQ==, tarball: https://codeload.github.com/nuxt4-layers/profile/tar.gz/37da8176ee9dec09b98e17b2527fdffd543e0f81}
     version: 0.4.0
     engines: {node: '>=22'}
     peerDependencies:
@@ -7103,7 +7103,7 @@ snapshots:
       - webpack
       - yaml
 
-  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/2c2f0c42ffb44924c95ab81546ce68816dab7491(1984ed7af82b11f193406bca05676db9)':
+  '@nuxt4-layers/authentication@https://codeload.github.com/nuxt4-layers/authentication/tar.gz/957205e8784c3894df93ecc3a7307f8939b43eb8(1984ed7af82b11f193406bca05676db9)':
     dependencies:
       '@better-auth/passkey': 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.6.5))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.4))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-auth@1.7.7(pg@8.23.1)(vue@3.5.43(typescript@6.0.3)))(better-call@1.4.0(zod@4.6.5))(nanostores@1.5.4)
       '@nuxt/kit': 4.5.2(magic-string@1.4.2)(magicast@0.5.5)(rolldown@1.2.11)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.11)(rollup@4.63.5)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)))
@@ -7146,19 +7146,19 @@ snapshots:
       - vitest
       - vue
 
-  '@nuxt4-layers/authorisation@https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/8fd3527a1f332373d47b1da136dd6b1895797f63(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
+  '@nuxt4-layers/authorisation@https://codeload.github.com/nuxt4-layers/authorisation/tar.gz/aba2b08494297a6ace05f3cd03ff7d90dfadeb8a(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
     dependencies:
       nuxt: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1)
       zod: 4.6.5
 
-  '@nuxt4-layers/iam-integration@https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/35e86ab288fed79848b513a98cfbd98304a3cb26': {}
+  '@nuxt4-layers/iam-integration@https://codeload.github.com/nuxt4-layers/iam-integration/tar.gz/a97336969aee9a7d21277035de69816ce8dc35e6': {}
 
-  '@nuxt4-layers/identity@https://codeload.github.com/nuxt4-layers/identity/tar.gz/8d6a7a03bfbadcab583f0f9ad0dc3975bb93d4dc(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
+  '@nuxt4-layers/identity@https://codeload.github.com/nuxt4-layers/identity/tar.gz/9c25d71a7afd3069ef0f0e2decb9f3eef5706edf(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
     dependencies:
       nuxt: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1)
       zod: 4.6.5
 
-  '@nuxt4-layers/profile@https://codeload.github.com/nuxt4-layers/profile/tar.gz/7d6a1bb12b869e5ccb1a9c4499ea6e3fc8c88ab2(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
+  '@nuxt4-layers/profile@https://codeload.github.com/nuxt4-layers/profile/tar.gz/37da8176ee9dec09b98e17b2527fdffd543e0f81(nuxt@4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1))':
     dependencies:
       nuxt: 4.5.2(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@oxc-project/types@0.151.0)(@types/node@26.6.3)(@vue/compiler-sfc@3.5.43)(cac@7.0.0)(db0@0.3.4)(esbuild@0.28.2)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.5)(optionator@0.9.4)(rolldown@1.2.11)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.11)(rollup@4.63.5))(rollup@4.63.5)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))(vue-tsc@3.3.11(typescript@6.0.3))(yaml@2.9.1)
       zod: 4.6.5
