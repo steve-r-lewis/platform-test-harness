@@ -46,6 +46,7 @@ export default defineConfig({
       // A fresh master key for each run, unless one is supplied.
       HARNESS_PROFILE_MASTER_KEY: process.env.HARNESS_PROFILE_MASTER_KEY ?? randomBytes(32).toString('base64'),
       NUXT_PROFILE_BASE_URL: ORIGIN,
+      NUXT_AUTHORISATION_BASE_URL: ORIGIN,
       HARNESS_TEST_MODE: '1',
       NUXT_AUTHENTICATION_SECRET: 'harness-e2e-secret-that-is-long-enough-0123456789',
       NUXT_AUTHENTICATION_BASE_URL: ORIGIN

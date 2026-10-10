@@ -172,3 +172,26 @@ export async function codeOf(response: { json(): Promise<unknown> }): Promise<st
   const body = await response.json() as { data?: { code?: string } }
   return body.data?.code
 }
+
+/** Requests a change through Authorisation (roles, assignments, grants, a group's access). */
+export function requestAccessChange(page: Page, request: { type: string, target: Record<string, unknown> }) {
+  return page.request.post('/api/authorisation/changes', { data: { request: { ...request, justification } }, headers })
+}
+
+export async function accessChangeOf(page: Page, changeId: string): Promise<Change> {
+  return (await page.request.get(`/api/authorisation/changes/${changeId}`)).json()
+}
+
+/** Decides an Authorisation change, approving the digest shown unless another is given. */
+export function decideAccess(page: Page, change: Change, decision: 'approve' | 'reject' = 'approve', changeDigest = change.changeDigest) {
+  return page.request.post(`/api/authorisation/changes/${change.changeId}/decision`, { data: { decision, changeDigest }, headers })
+}
+
+export interface AssignmentView { principalId: string, groupId: string, roleId: string, scope: string, expiresAt: string | null, confirmedAt: string | null }
+
+/** The roles held in a group, as one who may see them reads them. */
+export async function assignmentsIn(page: Page, groupId: string): Promise<AssignmentView[]> {
+  const response = await page.request.get(`/api/authorisation/groups/${groupId}/assignments`)
+  expect(response.status()).toBe(200)
+  return response.json()
+}
