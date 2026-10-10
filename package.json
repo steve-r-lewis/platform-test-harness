@@ -19,7 +19,7 @@
     "@nuxt4-layers/authentication": "git+https://github.com/nuxt4-layers/authentication.git#064e66824c50c696f6f0c9f95097541dc57f92d4",
     "@nuxt4-layers/authorisation": "git+https://github.com/nuxt4-layers/authorisation.git#5eedb7a8a651be725b99f1c9169acc879259ead6",
     "@nuxt4-layers/iam-integration": "git+https://github.com/nuxt4-layers/iam-integration.git#a3a414350c951bd2fba7acbb893962e4a62ae81d",
-    "@nuxt4-layers/identity": "git+https://github.com/nuxt4-layers/identity.git#ee43a6a9fa2319cc44b3a1c00a105fe565352bf2",
+    "@nuxt4-layers/identity": "git+https://github.com/nuxt4-layers/identity.git#6711f79570bcaa6cd1ea95acb81e20b145bb609d",
     "@nuxt4-layers/profile": "git+https://github.com/nuxt4-layers/profile.git#74db91a962264beebd4cb9367441dce95e36e0d0",
     "@nuxt4-layers/theme-manager": "git+https://github.com/nuxt4-layers/theme-manager.git#v0.2.1",
     "nuxt": "^4.5.2",

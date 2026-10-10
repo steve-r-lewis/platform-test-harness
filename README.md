@@ -31,7 +31,7 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 |---|---|
 | Theme Manager | `3f928bcf80bd6e32e0aa991fe0115096a1fe6280` |
 | Authentication | `064e66824c50c696f6f0c9f95097541dc57f92d4` (0.6.0 with the identity port, credential recovery records and its data-subject export) |
-| Identity | `ee43a6a9fa2319cc44b3a1c00a105fe565352bf2` (0.1.0 with permission effects and the names of groups a person left) |
+| Identity | `6711f79570bcaa6cd1ea95acb81e20b145bb609d` (0.1.0 with permission effects and the names of groups a person left) |
 | Authorisation | `5eedb7a8a651be725b99f1c9169acc879259ead6` (0.3.0, contract 3: view-only paused members; export and erasure of a principal) |
 | Profile | `74db91a962264beebd4cb9367441dce95e36e0d0` (0.4.0, phase 4: data-subject requests and legal holds, contact-detail verification, the administrators' view of suspended members, the departures and requests pages) |
 | IAM integration | `a3a414350c951bd2fba7acbb893962e4a62ae81d` (0.1.0, reference adapters; Identity's events forwarded to Profile; Profile's request coordination and access decision; legal holds on closure) |
