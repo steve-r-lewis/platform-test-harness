@@ -1232,7 +1232,7 @@ test.describe.serial('IAM suite', () => {
     }
   })
 
-  test('retention: each member deletes what its schedules let go, and announces counts only', async () => {
+  test('retention: each member, Authentication included, deletes what its schedules let go, and announces counts only', async () => {
     const before = (await events(ownerPage)).length
     await advance(ownerPage, 400 * DAY)
     await maintain(ownerPage)
@@ -1242,5 +1242,9 @@ test.describe.serial('IAM suite', () => {
     // Counts only (Identity nests them under `counts`): never an identifier.
     const leaves = (value: unknown): unknown[] => typeof value === 'object' && value !== null ? Object.values(value).flatMap(leaves) : [value]
     for (const event of applied) expect(leaves(event.data).every(value => typeof value === 'number')).toBe(true)
+    // Authentication's (through its event sink): a past credential recovery and the expired break-glass tokens are past their periods.
+    const authentication = (await recorder(ownerPage.request)).events.filter(e => e.type === 'authentication.retention-applied').at(-1)
+    expect(authentication).toMatchObject({ principalId: null })
+    expect(leaves(authentication!.counts).every(value => typeof value === 'number')).toBe(true)
   })
 })

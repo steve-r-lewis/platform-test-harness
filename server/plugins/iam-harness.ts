@@ -296,6 +296,15 @@ export default defineNitroPlugin((nitro) => {
     }
   }))
   provideAuthorisationSubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
+  // Legal holds pause Authentication's retention of credential-recovery records: Profile's holds on people.
+  provideAuthenticationLegalHolds(legalHoldsFromMembers({
+    part: 'authentication',
+    groupOrTenantHeld: async (subject) => {
+      await iamHarness.ready
+      return identityLegalHoldCovers(subject)
+    },
+    personHeldParts: async identityId => iamHarness.profile ? profileLegalHoldParts(identityId) : []
+  }))
   // Legal holds pause Authorisation's retention: Identity's on groups and tenants, Profile's on people.
   provideAuthorisationLegalHolds(legalHoldsFromMembers({
     part: 'authorisation',
@@ -383,6 +392,7 @@ export default defineNitroPlugin((nitro) => {
     await runIdentityMaintenance()
   })
   every(60_000, 'Authorisation maintenance', () => runAuthorisationMaintenance())
+  every(60_000, 'Authentication maintenance', () => runAuthenticationMaintenance())
   if (iamHarness.profile) {
     every(60_000, 'Profile key re-wrapping', () => rewrapProfileKeys())
     every(60_000, 'Profile maintenance', () => runProfileMaintenance())

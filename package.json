@@ -16,7 +16,7 @@
     "@iconify-json/lucide": "^1.2.134",
     "@iconify-json/simple-icons": "^1.2.96",
     "@nuxt/ui": "^4.11.1",
-    "@nuxt4-layers/authentication": "git+https://github.com/nuxt4-layers/authentication.git#957205e8784c3894df93ecc3a7307f8939b43eb8",
+    "@nuxt4-layers/authentication": "git+https://github.com/nuxt4-layers/authentication.git#c23663920b05021e3d6caa5079a25eb0c9f483af",
     "@nuxt4-layers/authorisation": "git+https://github.com/nuxt4-layers/authorisation.git#e72f639330e76443d5e7875fa658dbc32761f2a5",
     "@nuxt4-layers/iam-integration": "git+https://github.com/nuxt4-layers/iam-integration.git#cf0c5be70e162a7a1d426298cf4f13319667caea",
     "@nuxt4-layers/identity": "git+https://github.com/nuxt4-layers/identity.git#fee282641c161f586a4fcdc66561bf5aa59ce098",
