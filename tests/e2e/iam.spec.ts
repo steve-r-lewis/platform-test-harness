@@ -1132,8 +1132,10 @@ test.describe.serial('IAM suite', () => {
         deleted[groupId] = await response.json() as Change
         expect(deleted[groupId]!.route).toBe('parent-owner')
         await owner.signInWithPasskey()
-        expect((await decide(ownerPage, deleted[groupId]!)).status()).toBe(200)
-        expect(await settle(ownerPage, deleted[groupId]!)).toMatchObject({ state: 'applied' })
+        // Read from the decision itself: once the group is deleted, nobody can read a change in it.
+        const approved = await decide(ownerPage, deleted[groupId]!)
+        expect(approved.status()).toBe(200)
+        expect(await approved.json()).toMatchObject({ state: 'applied' })
       }
 
       // At once, before any member has disposed of anything: the group confers nothing and its memberships have ended.
