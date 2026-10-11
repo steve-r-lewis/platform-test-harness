@@ -7,12 +7,14 @@ import { PROFILE_PERMISSIONS } from '@nuxt4-layers/profile/contracts'
 import { IDENTITY_PERMISSIONS } from '@nuxt4-layers/identity/contracts'
 import {
   authenticationIdentityFromIdentity,
+  authenticationServiceGovernanceFromIdentity,
   authorisationGovernanceFromIdentity,
   authorisationDirectoryFromIdentity,
   createAuthenticationEventHandler,
   createDisposalConfirmationHandler,
   createIdentityEventHandler,
   createProfileEventHandler,
+  createServiceCredentialNoticeHandler,
   identityAccessDecisionFromAuthorisation,
   identityApprovalPolicyFromAuthorisation,
   identitySubjectResolverFromAuthentication,
@@ -25,7 +27,7 @@ import {
   rolesWithIdentityPermissions,
   tenantExportFromMembers
 } from '@nuxt4-layers/iam-integration/adapters'
-import type { InvitationSender } from '@nuxt4-layers/iam-integration/adapters'
+import type { InvitationSender, ServiceCredentialNotice } from '@nuxt4-layers/iam-integration/adapters'
 import { harnessTestMode } from './authentication-harness'
 
 /**
@@ -71,9 +73,11 @@ export interface IamHarness {
   invitations: { address: string, link: string, kind: 'member' | 'guest' }[]
   /** Break-glass enrolment links issued to the platform's operators, newest last (test mode only; never logged). */
   breakGlassLinks: { identityId: string, link: string }[]
+  /** Notices of service credentials issued, revoked or expiring, for their owning group's owners, newest last (test mode only). */
+  serviceNotices: ServiceCredentialNotice[]
 }
 
-export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false, codes: [], invitations: [], breakGlassLinks: [] }
+export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null, tenantId: null, platformGroupId: null, events: [], profile: false, codes: [], invitations: [], breakGlassLinks: [], serviceNotices: [] }
 
 /**
  * The host's invitation delivery, through iam-integration's invitation
@@ -368,6 +372,26 @@ export default defineNitroPlugin((nitro) => {
       reserve: async input => (await provisioning()).reserve(input),
       confirm: async input => (await provisioning()).confirm(input),
       signInStatus: async id => (await provisioning()).signInStatus(id)
+    }
+  }))
+
+  // Service identities: whether a person may manage one's credentials, from
+  // Identity; and each credential issued, revoked or expiring, told to the
+  // owning group's owners (iam-integration's service identities process).
+  const services = once(() => getIdentityServiceIdentities())
+  provideAuthenticationServiceGovernance(authenticationServiceGovernanceFromIdentity({
+    services: {
+      mayManageCredentials: async input => (await services()).mayManageCredentials(input),
+      describe: async input => (await services()).describe(input)
+    }
+  }))
+  harnessAuthenticationListeners.push(createServiceCredentialNoticeHandler({
+    services: { describe: async input => (await services()).describe(input) },
+    // A real host reaches each owner by the means it has; the harness records
+    // the notice for the test probes and logs no identifier.
+    async deliver(notice) {
+      if (harnessTestMode) iamHarness.serviceNotices.push(notice)
+      console.info(`[harness notifier] ${notice.type} to ${notice.ownerIds.length} owner(s)`)
     }
   }))
 
