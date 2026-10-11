@@ -1,5 +1,6 @@
 import pg from 'pg'
 import { DEFAULT_AUTHORISATION_POLICY } from '@nuxt4-layers/authorisation/contracts'
+import type { AuthorisationEvent } from '@nuxt4-layers/authorisation/contracts'
 import type { IdentityEvent } from '@nuxt4-layers/identity/contracts'
 import type { ProfileEvent } from '@nuxt4-layers/profile/contracts'
 import { PROFILE_PERMISSIONS } from '@nuxt4-layers/profile/contracts'
@@ -9,17 +10,20 @@ import {
   authorisationGovernanceFromIdentity,
   authorisationDirectoryFromIdentity,
   createAuthenticationEventHandler,
+  createDisposalConfirmationHandler,
   createIdentityEventHandler,
   createProfileEventHandler,
   identityAccessDecisionFromAuthorisation,
   identityApprovalPolicyFromAuthorisation,
   identitySubjectResolverFromAuthentication,
   invitationSenderFromIdentity,
+  legalHoldsFromMembers,
   newCorrelationId,
   profileAccessDecisionFromAuthorisation,
   profileRequestCoordinatorFromMembers,
   reconcileCredentialRecoveries,
-  rolesWithIdentityPermissions
+  rolesWithIdentityPermissions,
+  tenantExportFromMembers
 } from '@nuxt4-layers/iam-integration/adapters'
 import type { InvitationSender } from '@nuxt4-layers/iam-integration/adapters'
 import { harnessTestMode } from './authentication-harness'
@@ -116,9 +120,34 @@ const HARNESS_NOTE_PERMISSIONS = [
 /** Identity's, Profile's and the stand-in capability's permissions, for Authorisation's catalogue and roles. */
 const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS, ...HARNESS_NOTE_PERMISSIONS]
 
-/** Supplies Identity's policy: the harness tenant is every sign-up's home tenant. */
+/**
+ * Supplies Identity's policy: the harness tenant is every sign-up's home
+ * tenant, and a deleted group or closed tenant is disposed of once every
+ * composed member that holds anything per group has confirmed it.
+ */
 export function applyIdentityPolicy(): void {
-  provideIdentityPolicy({ defaultHomeTenantId: iamHarness.tenantId, platformGroupId: iamHarness.platformGroupId })
+  provideIdentityPolicy({
+    defaultHomeTenantId: iamHarness.tenantId,
+    platformGroupId: iamHarness.platformGroupId,
+    disposalParticipants: iamHarness.profile ? ['authorisation', 'profile'] : ['authorisation']
+  })
+}
+
+/** Members' disposal confirmations, relayed to Identity (iam-integration's group deletion, step 6). */
+const confirmDisposal = createDisposalConfirmationHandler({
+  async record(input) {
+    await iamHarness.ready
+    return recordIdentityDisposal(input)
+  }
+})
+
+/**
+ * The back end of the host's governance export (`/api/tenants/:tenantId/export`):
+ * Identity decides who may have it, then Authorisation adds its part.
+ */
+export async function tenantExport() {
+  await iamHarness.ready
+  return tenantExportFromMembers({ exportIdentityTenant: exportIdentityTenantData, exportAuthorisationTenant: exportAuthorisationTenantData })
 }
 
 /** Relays Identity's outbox, then Profile's, until both are empty: what the timers do, for the test probes. */
@@ -137,8 +166,9 @@ export async function relayIdentityNow(): Promise<void> {
   }
 }
 
-/** Authorisation's events (changes requested, decided and applied): the test probes record them. */
-async function publishAuthorisationEvent(event: { type: string }): Promise<void> {
+/** Authorisation's events: disposals are confirmed to Identity; the test probes record them all. */
+async function publishAuthorisationEvent(event: AuthorisationEvent): Promise<void> {
+  await confirmDisposal(event)
   if (harnessTestMode) iamHarness.events.push(event as never)
 }
 
@@ -155,6 +185,7 @@ const handleProfileEvent = createProfileEventHandler({
 
 async function publishProfileEvent(event: ProfileEvent): Promise<void> {
   await handleProfileEvent(event)
+  await confirmDisposal(event)
   if (harnessTestMode) iamHarness.events.push(event)
 }
 
@@ -265,6 +296,24 @@ export default defineNitroPlugin((nitro) => {
     }
   }))
   provideAuthorisationSubjectResolver(identitySubjectResolverFromAuthentication({ getAuthenticatedPrincipal }))
+  // Legal holds pause Authentication's retention of credential-recovery records: Profile's holds on people.
+  provideAuthenticationLegalHolds(legalHoldsFromMembers({
+    part: 'authentication',
+    groupOrTenantHeld: async (subject) => {
+      await iamHarness.ready
+      return identityLegalHoldCovers(subject)
+    },
+    personHeldParts: async identityId => iamHarness.profile ? profileLegalHoldParts(identityId) : []
+  }))
+  // Legal holds pause Authorisation's retention: Identity's on groups and tenants, Profile's on people.
+  provideAuthorisationLegalHolds(legalHoldsFromMembers({
+    part: 'authorisation',
+    groupOrTenantHeld: async (subject) => {
+      await iamHarness.ready
+      return identityLegalHoldCovers(subject)
+    },
+    personHeldParts: async identityId => iamHarness.profile ? profileLegalHoldParts(identityId) : []
+  }))
   provideAuthorisationDirectory(authorisationDirectoryFromIdentity({
     directory: {
       resolveActor: async (id, options) => (await directory()).resolveActor(id, options),
@@ -292,6 +341,9 @@ export default defineNitroPlugin((nitro) => {
     recordRequestPart: iamHarness.profile ? recordProfileRequestPart : undefined,
     assignRole: assignAuthorisationRole,
     unassignRole: unassignAuthorisationRole,
+    // A deleted group's or closed tenant's part in Authorisation, once Identity says disposal is due.
+    disposeGroup: disposeAuthorisationGroup,
+    disposeTenant: disposeAuthorisationTenant,
     // Each group's own default roles for new members and guests, from Authorisation.
     defaultRoles: authorisationDefaultRoles,
     // After every break-glass use: a new passkey, enrolled through a link to the platform's operators.
@@ -340,6 +392,7 @@ export default defineNitroPlugin((nitro) => {
     await runIdentityMaintenance()
   })
   every(60_000, 'Authorisation maintenance', () => runAuthorisationMaintenance())
+  every(60_000, 'Authentication maintenance', () => runAuthenticationMaintenance())
   if (iamHarness.profile) {
     every(60_000, 'Profile key re-wrapping', () => rewrapProfileKeys())
     every(60_000, 'Profile maintenance', () => runProfileMaintenance())
