@@ -31,7 +31,7 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 |---|---|
 | Theme Manager | `3f928bcf80bd6e32e0aa991fe0115096a1fe6280` |
 | Authentication | `08f0f24a3be9e34d9a11f1002ea735c8437fdd70` (0.6.0, phase 8: service identities' client credentials and tokens, beside the identity port, credential recovery records, break-glass accounts and retention) |
-| Identity | `e985d3b301f956b6edf251bb979fec5528b1fb0d` (0.1.0, contract 8: service identities, beside approvals, end of life and break-glass) |
+| Identity | `0a533d7921ce50f78d01591df10b64b73f9ae51b` (0.1.0, contract 8: service identities, beside approvals, end of life and break-glass) |
 | Authorisation | `be59e0a1e54af87c835fcf213addcc0a542bbdf6` (0.4.0, phase 7: service identities never request, decide or approve a change) |
 | Profile | `45fa80c6b6f4fd077bc5729f48cc9dc6ac4bceed` (0.4.0, data-subject requests, legal holds, end of life) |
 | IAM integration | `69eb3df32eed2a62257e711243976cbc268c1b62` (0.1.0, reference adapters, the service identities process, its governance port and owners' notices) |
