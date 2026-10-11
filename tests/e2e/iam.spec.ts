@@ -1067,6 +1067,131 @@ test.describe.serial('IAM suite', () => {
   })
 
   // ---------------------------------------------------------------------------
+  // Service identities (iam-integration docs/processes/service-identities.md)
+  // ---------------------------------------------------------------------------
+
+  test('service identities: created with approval, credentials issued by a passkey-signed-in administrator, tokens that act within its memberships, and a lifecycle that ends them', async ({ browser, request }) => {
+    const admin = await personWithPasskey(browser)
+    const outsider = await personWithPasskey(browser)
+    try {
+      await join(admin.page, ownerPage, platformGroupId)
+      const robots = await createGroup(admin.page, platformGroupId, 'Robot Workshop')
+
+      /** A change the administrator requests in a group they own; the platform group's owner approves it as the parent group's owner. */
+      const approved = async (request: { type: string, target: Record<string, unknown> }) => {
+        await admin.signInWithPasskey()
+        const response = await requestChange(admin.page, request)
+        expect(response.status()).toBe(201)
+        const change = await response.json() as Change & { createdId: string | null }
+        expect(change).toMatchObject({ state: 'awaiting-approval', route: 'parent-owner' })
+        // Whoever controls the service identity never approves for it: here, its requester.
+        expect((await decide(admin.page, change)).status()).toBe(409)
+        await owner.signInWithPasskey()
+        const decided = await decide(ownerPage, change)
+        expect(decided.status()).toBe(200)
+        expect((await decided.json()).state).toBe('applied')
+        await relay(ownerPage)
+        return change
+      }
+
+      // Created with approval: active, named, and a member of no group, its owning group included.
+      const created = await approved({ type: 'service-identity.create', target: { groupId: robots, name: 'Invoice Robot' } })
+      const serviceId = created.createdId!
+      expect(serviceId).toMatch(UUID_V7)
+      const service = async () => (await admin.page.request.get(`/api/identity/service-identities/${serviceId}`)).json()
+      expect(await service()).toMatchObject({ identityId: serviceId, owningGroupId: robots, name: 'Invoice Robot', state: 'active', groupIds: [] })
+      const renamed = await admin.page.request.patch(`/api/identity/service-identities/${serviceId}`, { data: { name: 'Billing Robot' }, headers })
+      expect(renamed.status()).toBe(200)
+      expect((await renamed.json()).name).toBe('Billing Robot')
+
+      // Credentials: only someone who may manage it, after a passkey sign-in within fifteen minutes.
+      const credentials = `/api/authentication/service-identities/${serviceId}/credentials`
+      expect((await outsider.page.request.post(credentials, { data: { kind: 'secret' }, headers })).status()).toBe(403)
+      await admin.signInWithPasskey()
+      await advance(admin.page, 16 * MINUTE)
+      expect((await admin.page.request.post(credentials, { data: { kind: 'secret' }, headers })).status()).toBe(401)
+      await admin.signInWithPasskey()
+      const issue = async () => {
+        const response = await admin.page.request.post(credentials, { data: { kind: 'secret' }, headers })
+        expect(response.status()).toBe(201)
+        return response.json() as Promise<{ credential: { credentialId: string }, clientSecret: string }>
+      }
+      const first = await issue()
+      expect(first.clientSecret).toMatch(/^[A-Za-z0-9_-]{43}$/)
+      // The owning group's owners are told; the notice names no secret.
+      const notices = async () => ((await (await ownerPage.request.get('/api/__harness/iam/service-notices')).json()) as { type: string, serviceIdentityId: string, ownerIds: string[], credentialId: string }[])
+        .filter(n => n.serviceIdentityId === serviceId)
+      expect(await notices()).toEqual([expect.objectContaining({ type: 'authentication.service-credential-issued', credentialId: first.credential.credentialId, ownerIds: [admin.principalId] })])
+
+      // The service exchanges its secret for a token, with no browser and no cookie.
+      const token = async (secret: string) => {
+        const response = await request.post('/api/authentication/service-token', {
+          form: { grant_type: 'client_credentials' },
+          headers: { authorization: `Basic ${Buffer.from(`${serviceId}:${secret}`).toString('base64')}` }
+        })
+        return { status: response.status(), body: await response.json() as { access_token?: string, error?: string } }
+      }
+      const exchanged = await token(first.clientSecret)
+      expect(exchanged.status).toBe(200)
+      const firstToken = exchanged.body.access_token!
+      expect(await token('A'.repeat(43))).toEqual({ status: 401, body: { error: 'invalid_client' } })
+      const asService = (accessToken: string) => ({ authorization: `Bearer ${accessToken}` })
+      const viewRobots = async (accessToken: string) => (await request.get(`/api/identity/groups/${robots}`, { headers: asService(accessToken) })).status()
+
+      // A member of no group: it may do nothing yet; and it never requests or approves a change.
+      expect(await viewRobots(firstToken)).toBe(403)
+      expect((await request.post('/api/identity/changes', { headers: { ...headers, ...asService(firstToken) }, data: { request: { type: 'group.archive', target: { groupId: robots }, justification: { reasonCode: 'harness-test', reference: null } } } })).status()).toBe(403)
+      expect((await request.post('/api/authorisation/changes', { headers: { ...headers, ...asService(firstToken) }, data: { request: { type: 'role.unassign', target: { principalId: admin.principalId, groupId: robots, roleId: 'member' }, justification: { reasonCode: 'harness-test', reference: null } } } })).status()).toBe(403)
+
+      // Added to a group of its tenant with approval (never by whoever controls it), it acts within the roles that gives it.
+      await approved({ type: 'service-identity.join', target: { identityId: serviceId, groupId: robots } })
+      expect((await service()).groupIds).toEqual([robots])
+      await expect.poll(() => viewRobots(firstToken)).toBe(200)
+      // Never an owner.
+      const page = await (await admin.page.request.get(`/api/identity/groups/${robots}/members`)).json() as { members: { membership: { identityId: string, membershipId: string } }[] }
+      const membership = page.members.find(m => m.membership.identityId === serviceId)!.membership
+      await admin.signInWithPasskey()
+      expect((await requestChange(admin.page, { type: 'group.add-owner', target: { membershipId: membership.membershipId } })).status()).not.toBe(201)
+
+      // Rotation: a second credential is allowed, a third refused; revoking the first ends its tokens at once, not the second's.
+      await admin.signInWithPasskey()
+      const second = await issue()
+      expect((await admin.page.request.post(credentials, { data: { kind: 'secret' }, headers })).status()).toBe(409)
+      const secondToken = (await token(second.clientSecret)).body.access_token!
+      expect((await admin.page.request.delete(`${credentials}/${first.credential.credentialId}`, { headers })).status()).toBe(204)
+      expect(await viewRobots(firstToken)).toBe(401)
+      expect(await viewRobots(secondToken)).toBe(200)
+      expect((await token(first.clientSecret)).status).toBe(401)
+      expect((await notices()).map(n => n.type)).toEqual(expect.arrayContaining(['authentication.service-credential-revoked']))
+
+      // Suspended: its very next request is refused, and no token is issued; reinstated, it asks for one again.
+      await approved({ type: 'service-identity.suspend', target: { identityId: serviceId } })
+      expect(await viewRobots(secondToken)).toBe(401)
+      expect(await token(second.clientSecret)).toEqual({ status: 401, body: { error: 'invalid_client' } })
+      await approved({ type: 'service-identity.reinstate', target: { identityId: serviceId } })
+      expect(await viewRobots(secondToken)).toBe(401)
+      const again = await token(second.clientSecret)
+      expect(again.status).toBe(200)
+      expect(await viewRobots(again.body.access_token!)).toBe(200)
+
+      // Closed: its memberships end and its credentials are deleted.
+      await approved({ type: 'service-identity.close', target: { identityId: serviceId } })
+      expect(await service()).toMatchObject({ state: 'closed', groupIds: [] })
+      expect(await viewRobots(again.body.access_token!)).toBe(401)
+      expect((await token(second.clientSecret)).status).toBe(401)
+      await admin.signInWithPasskey()
+      expect((await admin.page.request.get(credentials)).status()).toBe(403)
+
+      // No event, log or notice carries a secret or a token.
+      const recorded = JSON.stringify([await recorder(ownerPage.request), await events(ownerPage), await notices()])
+      for (const secret of [first.clientSecret, second.clientSecret, firstToken, secondToken, again.body.access_token!]) expect(recorded).not.toContain(secret)
+    } finally {
+      await admin.close()
+      await outsider.close()
+    }
+  })
+
+  // ---------------------------------------------------------------------------
   // End of life (iam-integration docs/processes/group-deletion.md,
   // tenant-lifecycle.md and retention.md). Last: they move the clock by months.
   // ---------------------------------------------------------------------------
