@@ -66,3 +66,18 @@ test('saved runtime Theme survives a fresh consumer navigation', async ({ page }
 
   await expect(page.getByTestId('theme-probe-effects')).toHaveCSS('border-radius', '13px')
 })
+
+test('a signed-in person creates a Theme of their own in the editor', async ({ page }) => {
+  await signInAtAal2(page)
+  const { principal } = await (await page.request.get('/api/authentication/session')).json()
+  await page.goto('/theme-manager/new')
+  await page.getByLabel('Name', { exact: true }).first().fill('Created by its owner')
+
+  const created = page.waitForResponse(response => response.url().endsWith('/api/themes') && response.request().method() === 'POST')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  expect((await created).status()).toBe(200)
+  await expect(page).toHaveURL(/\/theme-manager$/)
+
+  const themes: { name: string, ownership: { ownerType: string, ownerId: string } }[] = await (await page.request.get('/api/themes')).json()
+  expect(themes.find(theme => theme.name === 'Created by its owner')?.ownership).toEqual({ ownerType: 'user', ownerId: principal.principalId })
+})

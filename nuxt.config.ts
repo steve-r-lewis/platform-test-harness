@@ -26,7 +26,8 @@ export default defineNuxtConfig({
       themeManager: {
         creationTemplateId: 'test-theme',
         creationOwnerType: 'user',
-        creationOwnerId: 'test-user'
+        // The signed-in person, set in the browser (app/plugins/theme-creation-owner.client.ts).
+        creationOwnerId: ''
       }
     }
   },
