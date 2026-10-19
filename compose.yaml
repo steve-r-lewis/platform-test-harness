@@ -1,6 +1,6 @@
-# Local, disposable PostgreSQL for the harness (never a hosted database).
-#   docker compose up -d      start it
-#   docker compose down -v    stop it and delete its data
+# Local, disposable PostgreSQL and Mailpit for the harness (never hosted services).
+#   docker compose up -d      start them
+#   docker compose down -v    stop them and delete their data
 services:
   postgres:
     image: postgres:16-alpine
@@ -17,6 +17,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Catches every message the harness sends (HARNESS_SMTP_URL=smtp://localhost:1025):
+  # read them at http://localhost:8025. Nothing is delivered beyond it.
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+    environment:
+      MP_MAX_MESSAGES: 500
 
 volumes:
   harness-postgres:

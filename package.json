@@ -22,19 +22,21 @@
     "@nuxt4-layers/identity": "git+https://github.com/nuxt4-layers/identity.git#v1.0.0",
     "@nuxt4-layers/profile": "git+https://github.com/nuxt4-layers/profile.git#v1.0.0",
     "@nuxt4-layers/theme-manager": "git+https://github.com/nuxt4-layers/theme-manager.git#v0.2.1",
+    "nodemailer": "^10.0.15",
     "nuxt": "^4.5.2",
     "pg": "^8.23.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@nuxt/eslint": "^1.17.0",
+    "@playwright/test": "^1.55.1",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
     "eslint": "^10.11.0",
     "eslint-plugin-better-tailwindcss": "^4.7.0",
     "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.11",
-    "@playwright/test": "^1.55.1",
-    "@types/pg": "^8.23.1",
-    "@axe-core/playwright": "^4.13.0"
+    "vue-tsc": "^3.3.11"
   },
   "packageManager": "pnpm@12.5.1"
 }

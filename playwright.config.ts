@@ -48,6 +48,9 @@ export default defineConfig({
       NUXT_PROFILE_BASE_URL: ORIGIN,
       NUXT_AUTHORISATION_BASE_URL: ORIGIN,
       HARNESS_TEST_MODE: '1',
+      // The tests read the recorder, never an inbox: send nothing, even when .env names
+      // Mailpit ('off', not empty: Windows drops empty variables, and .env would win).
+      HARNESS_SMTP_URL: 'off',
       NUXT_AUTHENTICATION_SECRET: 'harness-e2e-secret-that-is-long-enough-0123456789',
       NUXT_AUTHENTICATION_BASE_URL: ORIGIN
     }

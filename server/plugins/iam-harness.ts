@@ -83,7 +83,8 @@ export const iamHarness: IamHarness = { ready: Promise.resolve(), operator: null
  * The host's invitation delivery, through iam-integration's invitation
  * sender: Identity issues an invitation bound to nobody, and the harness
  * delivers the link. A real host sends it by email; the harness records it
- * for the test probes and logs neither the address nor the link.
+ * for the test probes, sends it to Mailpit when HARNESS_SMTP_URL is set, and
+ * logs neither the address nor the link.
  */
 export async function invitationSender(): Promise<InvitationSender> {
   await iamHarness.ready
@@ -92,9 +93,14 @@ export async function invitationSender(): Promise<InvitationSender> {
   return invitationSenderFromIdentity({
     joining: getIdentityJoining(),
     acceptanceUrl: new URL('/invitations/accept', base).href,
-    async deliver({ address, link, kind }) {
+    async deliver({ address, link, kind, expiresAt }) {
       if (harnessTestMode) iamHarness.invitations.push({ address, link, kind })
       console.info(`[harness notifier] ${kind} invitation`)
+      await sendHarnessMail({
+        to: address,
+        subject: 'You are invited to join a group',
+        text: ['You are invited to join a group.', '', 'Open this link to accept:', link, '', `It works once, until ${expiresAt}.`].join('\n')
+      })
     }
   })
 }
@@ -229,11 +235,20 @@ function composeProfile(operator: pg.Pool): boolean {
   // Whether a viewer may see a group's suspended members, from Authorisation.
   provideProfileAccessDecision(profileAccessDecisionFromAuthorisation({ authorise }))
   // Verification codes: a real host sends them by email or SMS. The harness
-  // records them for the test probes and logs neither the address nor the code.
+  // records them for the test probes, sends email ones to Mailpit when
+  // HARNESS_SMTP_URL is set, and logs neither the address nor the code.
   provideProfileNotifier({
     async send(message) {
       if (harnessTestMode) iamHarness.codes.push({ attribute: message.attribute, code: message.code })
       console.info(`[harness notifier] ${message.purpose} by ${message.channel}`)
+      // Mailpit takes email only; a code by SMS stays recorded.
+      if (message.channel === 'email') {
+        await sendHarnessMail({
+          to: message.to,
+          subject: 'Your verification code',
+          text: [`Your code to verify this email address is ${message.code}.`, '', `It expires in ${Math.round(message.expiresInSeconds / 60)} minutes.`].join('\n')
+        })
+      }
     }
   })
   return true

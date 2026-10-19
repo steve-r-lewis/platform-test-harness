@@ -51,7 +51,7 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Responsibility | Harness adapter |
 |---|---|
 | Database port | The shared `pg.Pool` from `HARNESS_DATABASE_URL`; migrations applied at start-up (`server/plugins/authentication-harness.ts`) |
-| Mailer and event sink | Recorders, readable at `/api/__harness/recorder` only when `HARNESS_TEST_MODE=1` |
+| Mailer and event sink | Recorders, readable at `/api/__harness/recorder` only when `HARNESS_TEST_MODE=1`; with `HARNESS_SMTP_URL` the mail is also sent, through nodemailer, to Mailpit from `compose.yaml` (`server/utils/harness-mail.ts`). The browser tests read the recorder and send nothing (`HARNESS_SMTP_URL=off`) |
 | Identity (principal → Theme actor) | A principal at the policy's required level (aal2) becomes the Theme actor; anything else is anonymous (`server/plugins/theme-manager-harness.ts`) |
 | Authorization (interim) | Anyone may read and use Themes; only signed-in actors may change them |
 | Theme storage | PostgreSQL table in the same database; absent without it, so Theme Manager runs stand-alone |
@@ -79,11 +79,11 @@ Profile joins when `HARNESS_PROFILE_DATABASE_URL` (its own runtime role, which o
 | Profile's key wrapper | Profile's local wrapper over `HARNESS_PROFILE_MASTER_KEY` |
 | Profile's request coordinator | `profileRequestCoordinatorFromMembers` over Identity's, Authentication's and Authorisation's exports |
 | Profile's access decision | `profileAccessDecisionFromAuthorisation` over `authorise`, with Profile's permission in Authorisation's catalogue and roles |
-| Profile's notifier | The harness's own: records verification codes in test mode, and logs neither the address nor the code |
+| Profile's notifier | The harness's own: records verification codes in test mode, sends email ones to Mailpit with `HARNESS_SMTP_URL`, and logs neither the address nor the code |
 | Profile's `ProfileGroupName` | The harness's own component (`app/components/ProfileGroupName.vue`): the names of groups a person left, from Identity's `GET /api/identity/me` |
 | Identity's `IdentityPersonName` | The harness's own component (`app/components/IdentityPersonName.vue`): names from Profile, as the signed-in viewer may see them, with each page's names batched into one lookup; on a group's pages as an administration listing, so the group's administrators see suspended members |
 | Credential recovery | Authentication's `credentials-recovered` event, and reconciliation from its records every minute |
-| Invitations | The harness's `POST /api/invitations`, through `invitationSenderFromIdentity`: Identity issues an invitation bound to nobody, and the harness's delivery records the link in test mode, logging neither the address nor the link |
+| Invitations | The harness's `POST /api/invitations`, through `invitationSenderFromIdentity`: Identity issues an invitation bound to nobody, and the harness's delivery records the link in test mode and sends it to Mailpit with `HARNESS_SMTP_URL`, logging neither the address nor the link |
 | Break-glass rotation | The adapters' event handler on `break-glass.used`: Authentication's `rotateAuthenticationBreakGlass`, the new enrolment link to the platform's operators (recorded in test mode) |
 | Authorisation's governance and subject resolver | `authorisationGovernanceFromIdentity` over Identity's `getIdentityAccessGovernance()`; Authentication's principal through the subject adapter |
 | Authorisation's outbox, maintenance and default roles | Relayed with Identity's and Profile's, maintenance every minute, and each group's default roles (`authorisationDefaultRoles`) on `membership.added` |
@@ -111,11 +111,11 @@ You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), Node
    ```bash
    pnpm install
    ```
-2. **Start the database:**
+2. **Start the database and the mail catcher:**
    ```bash
    docker compose up -d
    ```
-   This starts PostgreSQL 16 on `localhost:5432` with a `harness` database (`compose.yaml`).
+   This starts PostgreSQL 16 on `localhost:5432` with a `harness` database, and [Mailpit](https://mailpit.axllent.org/), which catches every message the harness sends: read them at <http://localhost:8025>. Nothing is delivered beyond it (`compose.yaml`).
 3. **Create your settings file** (once):
    ```bash
    cp .env.example .env
@@ -127,7 +127,7 @@ You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), Node
    ```
    Open <http://localhost:3000> (use `localhost`, not `127.0.0.1`). The first visit to each page is slow while it compiles.
 5. **Create an account:** go to <http://localhost:3000/sign-up> and enter an email address (it does not need to be real) and a password of at least 15 characters.
-6. **Confirm the email address:** no email is sent. Open <http://localhost:3000/api/__harness/recorder>, copy the `actionUrl` of the newest `email-verification` message, and open it in the browser.
+6. **Confirm the email address:** open Mailpit at <http://localhost:8025>, open the **Confirm your email address** message and follow its link. (Without `HARNESS_SMTP_URL`, nothing is sent: copy the `actionUrl` of the newest `email-verification` message at <http://localhost:3000/api/__harness/recorder> instead.)
 7. **Sign in:** at <http://localhost:3000/sign-in> with the same email address and password.
 8. **Add the second factor:** you are taken to the two-factor page. Choose **Use an authenticator app**, enter your password, scan the QR code with your authenticator app, type the six-digit code, then save the backup codes and confirm.
 9. **Open Theme Manager:** select **Theme Manager** in the header. You can now create, edit and save Themes. Next time you only need steps 2, 4 and 7 (with a code from your app).
@@ -138,6 +138,7 @@ To stop: press `Ctrl+C` for the harness, then `docker compose down` (add `-v` to
 
 **Troubleshooting**
 - *Port 5432 is already in use:* another PostgreSQL is running. Stop it, or change the first `5432` in `compose.yaml` to `5433` and the port in `HARNESS_DATABASE_URL` to match.
+- *No message in Mailpit:* check `HARNESS_SMTP_URL=smtp://localhost:1025` is in `.env` and Mailpit is running (`docker compose up -d`); the harness warns `[harness mailer] not sent` when it cannot reach it. Restart `pnpm dev` after changing `.env`.
 - *The verification link has expired or was used:* sign up again with a different email address and repeat step 6.
 - *The six-digit code is refused:* check your phone's clock is set automatically, and enter the code before it changes.
 
