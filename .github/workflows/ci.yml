@@ -67,6 +67,9 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
+      - name: Every spec file in a suite
+        run: pnpm run test:pick --check
+
       - name: Install Playwright browser
         run: pnpm exec playwright install --with-deps chromium
 
