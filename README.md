@@ -54,6 +54,7 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Mailer and event sink | Recorders, readable at `/api/__harness/recorder` only when `HARNESS_TEST_MODE=1`; with `HARNESS_SMTP_URL` the mail is also sent, through nodemailer, to Mailpit from `compose.yaml` (`server/utils/harness-mail.ts`). The browser tests read the recorder and send nothing (`HARNESS_SMTP_URL=off`) |
 | Identity (principal → Theme actor) | A principal at the policy's required level (aal2) becomes the Theme actor; anything else is anonymous (`server/plugins/theme-manager-harness.ts`) |
 | Authorization (interim) | Anyone may read and use Themes; only signed-in actors may change them |
+| Theme creation owner | The signed-in person: Theme Manager takes a new Theme's owner from public runtime config, which the harness keeps in step with the principal in the browser (`app/plugins/theme-creation-owner.client.ts`) |
 | Theme storage | PostgreSQL table in the same database; absent without it, so Theme Manager runs stand-alone |
 | Routing | Theme administration requires sign-in when Theme storage exists (`app/middleware/theme-administration.global.ts`); layer pages own their `<main>` landmark (`app/app.vue`) |
 | Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
