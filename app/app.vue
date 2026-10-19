@@ -1,9 +1,15 @@
 <script setup lang="ts">
-// Layer pages that supply their own <main> landmark (the Authentication
-// layer's pages are named `authentication-*`) render inside a plain
-// container, so each page has exactly one main landmark.
+// The shell follows the routing convention (app/utils/harness-routes.ts): the
+// signed-in application, with its modules menu, only for a session at the
+// policy's required level; everything else in the public layout.
 const route = useRoute()
-const pageOwnsMain = computed(() => String(route.name ?? '').startsWith('authentication-'))
+const { isAuthenticated, needsSecondFactor, ready, refresh } = useAuthentication()
+if (!ready.value) await refresh()
+const layout = computed(() => {
+  const signedIn = isAuthenticated.value && !needsSecondFactor.value
+  const inApplication = harnessRouteAccess(route.name) === 'signed-in' || route.name === 'index'
+  return signedIn && inApplication ? 'signed-in' : 'default'
+})
 
 useHead({
   meta: [
@@ -25,28 +31,9 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader>
-      <template #left>
-        <NuxtLink
-          to="/"
-          class="font-semibold"
-        >
-          Theme Manager Test Harness
-        </NuxtLink>
-      </template>
-
-      <template #right>
-        <UColorModeButton />
-        <UButton
-          to="/theme-manager"
-          label="Theme Manager"
-          variant="subtle"
-        />
-      </template>
-    </UHeader>
-
-    <UMain :as="pageOwnsMain ? 'div' : 'main'">
+    <HarnessHeader />
+    <NuxtLayout :name="layout">
       <NuxtPage />
-    </UMain>
+    </NuxtLayout>
   </UApp>
 </template>

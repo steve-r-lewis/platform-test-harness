@@ -1,8 +1,8 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { lastLink, ORIGIN, PASSWORD, recorder, signInAtAal2, verifiedAccount } from './support/authentication'
+import { enrolAuthenticator, lastLink, ORIGIN, PASSWORD, recorder, signInAtAal2, signInWithPassword, verifiedAccount } from './support/authentication'
 import type { AssignmentView, Change, Person } from './support/iam'
-import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, MINUTE, personWithPasskey, personWithPassword, requestAccessChange, requestChange } from './support/iam'
+import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, MINUTE, personWithPasskey, personWithPassword, principalOf, requestAccessChange, requestChange } from './support/iam'
 
 /**
  * The IAM suite composed: Identity, Authentication and Authorisation,
@@ -26,10 +26,19 @@ async function signedIn(page: Page): Promise<{ email: string, principalId: strin
 
 const relay = (page: Page) => page.request.post('/api/__harness/iam/relay', { headers })
 
-async function anotherPerson(browser: Browser) {
+/**
+ * Another person, signed in with a password: enough for the members' APIs. Pass
+ * `opensPages` for one who opens the application's pages, which need the policy's
+ * second factor too (README, "Routes and access").
+ */
+async function anotherPerson(browser: Browser, { opensPages = false } = {}) {
   const context = await browser.newContext({ baseURL: ORIGIN })
   const page = await context.newPage()
-  return { page, ...(await signedIn(page)), close: () => context.close() }
+  if (!opensPages) return { page, ...(await signedIn(page)), close: () => context.close() }
+  const email = await verifiedAccount(page)
+  await signInWithPassword(page, email)
+  await enrolAuthenticator(page)
+  return { page, email, principalId: await principalOf(page), close: () => context.close() }
 }
 
 test.describe.serial('IAM suite', () => {
@@ -133,8 +142,8 @@ test.describe.serial('IAM suite', () => {
     expect(stale.status()).toBe(409)
     const ownerId = (await (await ownerPage.request.get('/api/authentication/session')).json()).principal.principalId as string
 
-    const member = await anotherPerson(browser)
-    const outsider = await anotherPerson(browser)
+    const member = await anotherPerson(browser, { opensPages: true })
+    const outsider = await anotherPerson(browser, { opensPages: true })
     try {
       const asked = await member.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
       const { joinRequestId } = await asked.json()
@@ -244,7 +253,7 @@ test.describe.serial('IAM suite', () => {
   })
 
   test('leaving a group: Profile lists it under Identity\'s name, and the person may be anonymous there', async ({ browser }) => {
-    const leaver = await anotherPerson(browser)
+    const leaver = await anotherPerson(browser, { opensPages: true })
     try {
       const asked = await leaver.page.request.post(`/api/identity/groups/${platformGroupId}/join`, { headers })
       const { joinRequestId } = await asked.json()
