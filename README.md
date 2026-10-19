@@ -123,6 +123,35 @@ The harness stands in for the final application, so its pages follow one convent
 - a session ended in another tab is noticed at the next navigation;
 - signing out leaves the signed-in application.
 
+## Choosing the tests
+
+As more layers are composed, the browser suite grows, and a change usually needs only part of it run again. The suites are named once in `tests/suites.ts`. Each entry gives the suite's spec files and the layers they exercise.
+
+| Suite | Spec files | Runs |
+|---|---|---|
+| `shell` | `authentication.spec.ts`, `routes.spec.ts` | Always: composition, sign-in, routes and access, which every change can break |
+| `iam` | `iam.spec.ts` | When chosen |
+| `theme-manager` | `theme-manager.spec.ts` | When chosen |
+
+```bash
+pnpm test:pick                         # a checklist in a terminal (space ticks, enter runs)
+pnpm test:pick --suite iam             # those suites, and the ones that always run
+pnpm test:pick --all                   # every suite
+pnpm test:pick --list                  # the suites, and which changed since they last passed
+pnpm test:pick --suite iam -- --headed # anything after -- goes to Playwright
+```
+
+**What the checklist ticks:** the suites that changed since they last passed on this machine. A suite counts as changed when:
+- a layer it exercises is at another commit, or has uncommitted changes (when composed from a local folder);
+- one of its spec files changed;
+- the shared test support changed (`tests/e2e/support/`, the database preparation, `playwright.config.ts`).
+
+Changes to the harness's own app and server code are yours to judge. The record is kept in `.cache/test-pick.json`, which is not committed. A run counts only when it passes and no extra Playwright options were given, since those may have run only part of a suite.
+
+**Outside a terminal** (a script or CI), `pnpm test:pick` with no options runs every suite. **CI** always runs every suite with `pnpm test:e2e`, because one layer breaking another is what the harness exists to catch. CI also runs `pnpm test:pick --check`, which fails when a spec file belongs to no suite or to two.
+
+**Adding a layer:** add its spec files and a suite entry naming them and the layers they exercise.
+
 ## Run it locally (with sign-in)
 
 Theme administration needs a signed-in account with two factors, and that needs a database. These steps run everything on your machine with a disposable PostgreSQL in Docker.
@@ -171,6 +200,7 @@ pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck
 HARNESS_POSTGRES_URL=postgres://postgres@localhost:5432/postgres pnpm test:e2e
+HARNESS_POSTGRES_URL=postgres://postgres@localhost:5432/postgres pnpm test:pick   # choose the suites
 ```
 
 `HARNESS_POSTGRES_URL` is an admin connection to a **disposable local PostgreSQL**; the suite recreates the `platform_harness_e2e` database on every run. CI uses a service container. Never point it at a hosted database.
