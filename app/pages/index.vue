@@ -1,5 +1,8 @@
 <script setup lang="ts">
 const { storage } = await useThemeCapabilities()
+const { isAuthenticated, needsSecondFactor } = useAuthentication()
+const signedIn = computed(() => isAuthenticated.value && !needsSecondFactor.value)
+const routes = useRuntimeConfig().public.authentication.routes
 const checks = computed(() => [
   'Theme Manager layer composes through its package root',
   'Bundled semantic presentation stylesheet is active',
@@ -25,7 +28,10 @@ const checks = computed(() => [
         This application consumes Theme Manager as an independent Nuxt layer. It deliberately keeps
         persistence, identity and authorization adapters minimal so integration failures remain easy to isolate.
       </p>
-      <div class="flex gap-3">
+      <div
+        v-if="signedIn"
+        class="flex gap-3"
+      >
         <UButton
           to="/theme-manager"
           label="Open Theme Library"
@@ -37,6 +43,21 @@ const checks = computed(() => [
           label="Create Theme"
           variant="outline"
           icon="i-lucide-plus"
+        />
+      </div>
+      <div
+        v-else
+        class="flex gap-3"
+      >
+        <UButton
+          :to="routes.signIn"
+          label="Sign in"
+          icon="i-lucide-log-in"
+        />
+        <UButton
+          :to="routes.signUp"
+          label="Create an account"
+          variant="outline"
         />
       </div>
     </div>

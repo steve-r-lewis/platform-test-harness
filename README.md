@@ -42,7 +42,7 @@ Theme Manager's existing black-box Playwright coverage is retained, including th
 
 Both layers use the one disposable PostgreSQL named by `HARNESS_DATABASE_URL` (`server/utils/harness-database.ts`): Authentication through its database port, Theme Manager through a small JSONB `harness_themes` table (`server/plugins/theme-manager-harness.ts`), seeded with the test Theme.
 
-Without `HARNESS_DATABASE_URL` the harness still runs as a demonstration: Theme Manager runs stand-alone on its built-in default Theme (no creating or editing; its pages open without sign-in), and Authentication fails closed (503). The home page states which Theme storage is in use.
+Without `HARNESS_DATABASE_URL` the harness still runs as a demonstration: Theme Manager applies its built-in default Theme, and Authentication fails closed (503), so nobody can sign in and every page of the signed-in application, Theme Manager's included, sends visitors to the sign-in page. The home page states which Theme storage is in use.
 
 ### Authentication composition
 
@@ -56,7 +56,7 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Authorization (interim) | Anyone may read and use Themes; only signed-in actors may change them |
 | Theme creation owner | The signed-in person: Theme Manager takes a new Theme's owner from public runtime config, which the harness keeps in step with the principal in the browser (`app/plugins/theme-creation-owner.client.ts`) |
 | Theme storage | PostgreSQL table in the same database; absent without it, so Theme Manager runs stand-alone |
-| Routing | Theme administration requires sign-in when Theme storage exists (`app/middleware/theme-administration.global.ts`); layer pages own their `<main>` landmark (`app/app.vue`) |
+| Routing | Deny by default: every page needs a session at the policy's required level unless named public (`app/utils/harness-routes.ts`, enforced by `app/middleware/access.global.ts`); see [Routes and access](#routes-and-access) |
 | Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
 
 `tests/e2e/authentication.spec.ts` covers composition conflicts (routes, styling beside Nuxt UI, landmarks, headers, WCAG 2.2 AA in both modes), the principal-to-actor mapping (anonymous, aal1 and signed-out sessions cannot change Themes), and negative paths across the boundary (cross-origin requests, forged session cookies, secrets in events).
@@ -102,6 +102,27 @@ At start-up the harness migrates Identity and provisions one tenant, every sign-
 
 `tests/e2e/iam.spec.ts` follows the processes across the members: provisioning, Authorisation deciding Identity's permissions from roles that follow Identity's owners, Identity's pages through the composition (WCAG 2.2 AA), a paused member viewing but not changing, Profile showing a person's chosen name to a fellow member (through its API and on Identity's group page) and nothing to an outsider, pausing ending sessions, and events carrying opaque identifiers only. With the suite's clock it follows the remaining processes' acceptance tests: invitations (one answer for any address, single use, revoked and expired links, a forwarded guest link awaiting confirmation, end dates in effect before maintenance), leaving, approvals (the parent-owner fallback, a raised requirement, refusals of the requester, the beneficiary, a changed change, a lapsed approver and a self-grant, published delays, safety periods and their risk treatment), recovery (step-up and the recovery hold after a password reset, an orphaned group's delay, and an objection), account closure (cancellation, erasure across every member and signing up afresh, and a legal hold keeping Authentication's part until released) break-glass access (one-time enrolment, passkey-only, its limits, rotation after use and the review by another operator), and access administration (a role's risk deciding its approval, the parent-owner fallback, the descendants scope, owners following Identity, no self-grant, sharing from one's personal group at the permission's assurance, default roles, a time-limited role ending before maintenance, an overdue access review, a custom role defined only by the root group's owners, and Authorisation's group access page with Profile's names under WCAG 2.2 AA), service identities (created with approval and renamed; a secret issued only by someone who may manage it after a passkey sign-in within fifteen minutes, its owners told; a token from the client-credentials grant acting only within the memberships an approved join gives, never requesting a change or becoming an owner; two credentials at most, revoking one ending its tokens at once; suspension refusing its very next request, reinstatement, and closure deleting its credentials; no secret or token in any event or notice), and end of life (an archived group deleted with approval and conferring nothing at once, its disposal confirmed by every member, a group under legal hold kept until the hold is released; a tenant's shutdown approved only by a platform operator, its governance export during the notice, and every group in it deleted and disposed of at its end; retention announced with counts only).
 
+## Routes and access
+
+The harness stands in for the final application, so its pages follow one convention, which every module added later follows too.
+
+- **Deny by default.** Every page needs a session signed in at the policy's required level (both factors while MFA is required), unless its route is named in `app/utils/harness-routes.ts`. A page a layer or module adds is therefore protected without anyone protecting it, and so is a path nothing serves. Routes are named, not matched by path, because hosts may move a layer's pages.
+- **Public routes.** Only these are public:
+  - the home page;
+  - Authentication's pages for people not yet signed in (sign-in, sign-up, forgotten and reset password, and the second-factor page, which keeps its own guard);
+  - the two pages opened from links whose secret is in the URL's fragment: break-glass enrolment and accepting an invitation. A redirect to sign-in would lose the secret, so these pages ask the visitor to sign in themselves.
+- **One guard.** `app/middleware/access.global.ts` sends anonymous visitors to sign-in and password-only sessions to the second-factor page, each with `redirect` set to the page they asked for. It reads the session again at every navigation into the signed-in application, so a session that ended elsewhere is noticed at once.
+- **The guard is not the security boundary.** It only shapes the user experience: every API still enforces access on the server.
+- **Two shells.** A fully signed-in session gets the signed-in application: the modules menu beside the page (in the header's menu on small screens) and the account menu (Security, Sign out). Everything else gets the public shell, which offers sign-in and sign-up. Layer pages supply their own `<main>` landmark; the shell adds one only for pages that do not (`app/layouts/`).
+- **One menu.** The modules are listed once, in `app/utils/harness-modules.ts`. A new module adds an entry there and needs no guard of its own.
+
+`tests/e2e/routes.spec.ts` proves the convention:
+- anonymous visitors are sent to sign-in from a page of every layer and from an unknown path;
+- a password-only session is sent to the second factor;
+- once signed in, every module opens from the menu, each page with one main landmark;
+- a session ended in another tab is noticed at the next navigation;
+- signing out leaves the signed-in application.
+
 ## Run it locally (with sign-in)
 
 Theme administration needs a signed-in account with two factors, and that needs a database. These steps run everything on your machine with a disposable PostgreSQL in Docker.
@@ -135,7 +156,7 @@ You need [Docker Desktop](https://www.docker.com/products/docker-desktop/), Node
 
 To stop: press `Ctrl+C` for the harness, then `docker compose down` (add `-v` to delete the database as well).
 
-**Without a database:** remove `HARNESS_DATABASE_URL` from `.env`. Theme Manager then runs stand-alone on its built-in default Theme (no sign-in, nothing to create or edit) and the sign-in pages answer 503.
+**Without a database:** remove `HARNESS_DATABASE_URL` from `.env`. The home page then shows Theme Manager's built-in default Theme; the sign-in pages answer 503, so the signed-in application cannot be opened.
 
 **Troubleshooting**
 - *Port 5432 is already in use:* another PostgreSQL is running. Stop it, or change the first `5432` in `compose.yaml` to `5433` and the port in `HARNESS_DATABASE_URL` to match.
