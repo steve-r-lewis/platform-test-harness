@@ -178,7 +178,7 @@ export async function tenantExport() {
   return tenantExportFromMembers({ exportIdentityTenant: exportIdentityTenantData, exportAuthorisationTenant: exportAuthorisationTenantData })
 }
 
-/** Relays Identity's outbox, then Profile's, until both are empty: what the timers do, for the test probes. */
+/** Relays Identity's outbox, then Profile's, Authorisation's and the configuration layer's, until each is empty: what the timers do, for the test probes. */
 export async function relayIdentityNow(): Promise<void> {
   await iamHarness.ready
   for (;;) {
@@ -192,6 +192,9 @@ export async function relayIdentityNow(): Promise<void> {
     const result = await relayAuthorisationOutbox({ limit: 100, publish: publishAuthorisationEvent })
     if (result.published === 0 || result.failed > 0) break
   }
+  await relayConfigurationEvents((event) => {
+    if (harnessTestMode) iamHarness.events.push(event as never)
+  })
 }
 
 /** Authorisation's events: disposals are confirmed to Identity; the test probes record them all. */

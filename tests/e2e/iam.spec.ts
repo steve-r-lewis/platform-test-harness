@@ -1362,6 +1362,12 @@ test.describe.serial('IAM suite', () => {
       expect(provisioned.status()).toBe(200)
       const { tenantId, groupId: root } = await provisioned.json() as { tenantId: string, groupId: string }
       const child = await createGroup(tenantOwner.page, root, 'Closing Team')
+      // A low-risk setting of the team, applied at once, which the export carries.
+      const tagline = await tenantOwner.page.request.post('/api/configuration/changes', {
+        data: { target: { scope: 'group', groupId: child }, set: { 'site.tagline': 'Closing soon' }, expected: { 'site.tagline': null }, justification: { reasonCode: 'update' } },
+        headers
+      })
+      expect(tagline.status()).toBe(200)
       const exportOf = (page: Page) => page.request.get(`/api/tenants/${tenantId}/export`)
 
       // Nothing to export before the tenant is closing.
@@ -1392,9 +1398,14 @@ test.describe.serial('IAM suite', () => {
       const exported = await exportOf(tenantOwner.page)
       expect(exported.status()).toBe(200)
       expect(exported.headers()['cache-control']).toBe('no-store')
-      const records = await exported.json() as { identity: { groups: { groupId: string }[] }, authorisation: unknown }
+      const records = await exported.json() as { identity: { groups: { groupId: string }[] }, authorisation: unknown, configuration: { values: { scope_id: string, key: string, value: unknown }[] } }
       expect(records.identity.groups.map(g => g.groupId)).toEqual(expect.arrayContaining([root, child]))
       expect(records.authorisation).not.toBeNull()
+      expect(records.configuration.values).toEqual([expect.objectContaining({ scope_id: child, key: 'site.tagline', value: 'Closing soon' })])
+      // The configuration layer's events carry keys and identifiers, never the value.
+      const changed = (await events(ownerPage) as { type: string, data: Record<string, unknown> }[]).find(e => e.type === 'configuration.changed' && e.data.scopeId === child)
+      expect(changed?.data).toMatchObject({ scope: 'group', keys: ['site.tagline'] })
+      expect(JSON.stringify(changed)).not.toContain('Closing soon')
       const text = JSON.stringify(records)
       expect(text).not.toContain(tenantOwner.email)
       expect(text).not.toContain('@')

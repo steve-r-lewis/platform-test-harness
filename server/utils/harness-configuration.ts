@@ -26,6 +26,24 @@ export const CONFIGURATION_HARNESS_PERMISSIONS = CONFIGURATION_PERMISSIONS.map((
  */
 export const configurationHarness: { ready: (() => Promise<void>) | null } = { ready: null }
 
+/**
+ * Relays the configuration layer's outbox until it is empty, when it is
+ * composed. Its events carry identifiers, keys and codes, never a value; a
+ * real host forwards them to its event bus, the harness to `publish`.
+ */
+export async function relayConfigurationEvents(publish: (event: unknown) => void): Promise<void> {
+  if (!configurationHarness.ready) return
+  await configurationHarness.ready()
+  while (await relayConfigurationOutbox({ limit: 100, publish: async event => publish(event) }) > 0) { /* until empty */ }
+}
+
+/** The configuration layer's part of a tenant's export (its and its groups' values and history), when it is composed. */
+export async function exportTenantConfiguration(tenantId: string) {
+  if (!configurationHarness.ready) return null
+  await configurationHarness.ready()
+  return exportConfigurationTenantData({ tenantId })
+}
+
 /** Applies one of Identity's relayed events to the configuration layer, when it is composed. */
 export async function applyIdentityEventToConfiguration(event: unknown): Promise<void> {
   if (!configurationHarness.ready) return
