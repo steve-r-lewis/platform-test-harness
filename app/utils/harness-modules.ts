@@ -14,5 +14,6 @@ export const HARNESS_MODULES: readonly HarnessModule[] = [
   { label: 'Groups', icon: 'i-lucide-users', to: '/account/groups' },
   { label: 'Profile', icon: 'i-lucide-id-card', to: '/profile' },
   { label: 'Data requests', icon: 'i-lucide-file-archive', to: '/profile/requests' },
-  { label: 'Security', icon: 'i-lucide-shield-check', to: '/account/security' }
+  { label: 'Security', icon: 'i-lucide-shield-check', to: '/account/security' },
+  { label: 'Settings', icon: 'i-lucide-settings', to: '/configuration' }
 ]

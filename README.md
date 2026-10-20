@@ -35,6 +35,7 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authorisation | `be59e0a1e54af87c835fcf213addcc0a542bbdf6` (0.4.0, phase 7: service identities never request, decide or approve a change) |
 | Profile | `45fa80c6b6f4fd077bc5729f48cc9dc6ac4bceed` (0.4.0, data-subject requests, legal holds, end of life) |
 | IAM integration | `69eb3df32eed2a62257e711243976cbc268c1b62` (0.1.0, reference adapters, the service identities process, its governance port and owners' notices) |
+| Configuration | `082e8d5cc02a6e46d59712d444100a81a442c5cf` (0.3.0, phase 3: site, organisation and group settings with approvals, through its own adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
@@ -60,6 +61,10 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 | Presentation | None. Theme Manager supplies the semantic vocabulary and its values; the harness writes no CSS for the layers |
 
 `tests/e2e/authentication.spec.ts` covers composition conflicts (routes, styling beside Nuxt UI, landmarks, headers, WCAG 2.2 AA in both modes), the principal-to-actor mapping (anonymous, aal1 and signed-out sessions cannot change Themes), and negative paths across the boundary (cross-origin requests, forged session cookies, secrets in events).
+
+### Configuration composition
+
+The configuration layer (site, organisation and group settings, changed only through approved pending changes) runs with the IAM suite, connected only through its own reference adapters (`server/plugins/settings-harness.ts`): Identity's directory and access governance, Authorisation's qualification and Authentication's principal. Identity's relayed events keep its tenant states and dispose of a group's or tenant's settings when due. Its permissions join Authorisation's catalogue (`server/utils/harness-configuration.ts`), so a group's owners manage its settings and only the platform group's owners the platform's. The harness serves every tenant on `localhost`, which no tenant claims: the platform's own host name, where Authorisation alone limits what a person reaches. Its pages are `/configuration` and `/configuration/changes` (the Settings module); `tests/e2e/settings.spec.ts` covers them.
 
 ### IAM suite composition
 

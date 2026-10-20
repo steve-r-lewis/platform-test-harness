@@ -128,7 +128,7 @@ const HARNESS_NOTE_PERMISSIONS = [
 ] as const
 
 /** Identity's, Profile's and the stand-in capability's permissions, for Authorisation's catalogue and roles. */
-const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS, ...HARNESS_NOTE_PERMISSIONS]
+const PERMISSIONS = [...IDENTITY_PERMISSIONS, ...PROFILE_PERMISSIONS, ...HARNESS_NOTE_PERMISSIONS, ...CONFIGURATION_HARNESS_PERMISSIONS]
 
 /**
  * Supplies Identity's policy: the harness tenant is every sign-up's home
@@ -141,6 +141,8 @@ export function applyIdentityPolicy(): void {
     platformGroupId: iamHarness.platformGroupId,
     disposalParticipants: iamHarness.profile ? ['authorisation', 'profile'] : ['authorisation']
   })
+  // The platform group decides platform-wide settings too (configuration layer).
+  if (configurationHarness.ready && iamHarness.platformGroupId) provideConfigurationPlatformGroup(iamHarness.platformGroupId)
 }
 
 /** Members' disposal confirmations, relayed to Identity (iam-integration's group deletion, step 6). */
@@ -377,6 +379,7 @@ export default defineNitroPlugin((nitro) => {
   provideIdentityEventPublisher({
     async publish(event) {
       await handleIdentityEvent(event)
+      await applyIdentityEventToConfiguration(event)
       if (harnessTestMode) iamHarness.events.push(event)
     }
   })
