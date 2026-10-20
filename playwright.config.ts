@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { defineConfig, devices } from '@playwright/test'
+import { e2eDatabaseUrl } from './tests/e2e/support/database'
 
 /**
  * Black-box tests of the composed harness. Authentication needs a disposable
@@ -9,8 +10,7 @@ import { defineConfig, devices } from '@playwright/test'
  * localhost rather than 127.0.0.1.
  */
 const ORIGIN = 'http://localhost:3000'
-const database = new URL(process.env.HARNESS_POSTGRES_URL ?? 'postgres://postgres@localhost:5432/postgres')
-database.pathname = '/platform_harness_e2e'
+const database = e2eDatabaseUrl()
 // Identity's runtime role, created by prepare-database.mjs.
 const identityRuntime = new URL(database)
 identityRuntime.username = 'harness_identity_runtime'

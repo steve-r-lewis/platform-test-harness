@@ -145,6 +145,22 @@ export function applyIdentityPolicy(): void {
   if (configurationHarness.ready && iamHarness.platformGroupId) provideConfigurationPlatformGroup(iamHarness.platformGroupId)
 }
 
+/**
+ * Makes the identity the founding owner of the default tenant's first root
+ * group, the platform group: its owners are the platform's super
+ * administrators. Identity refuses it once a root group exists. Behind the
+ * founding code (server/api/platform/founding.post.ts) and the test probe.
+ */
+export async function foundPlatform(ownerId: string): Promise<{ groupId: string }> {
+  await iamHarness.ready
+  if (!iamHarness.operator) throw Object.assign(new Error('The IAM suite is not composed.'), { code: 'unavailable' })
+  const { groupId } = await bootstrapIdentityRootGroup({ pool: iamHarness.operator, tenantId: iamHarness.tenantId!, name: 'Platform', firstOwnerId: ownerId, correlationId: newCorrelationId() })
+  iamHarness.platformGroupId = groupId
+  applyIdentityPolicy()
+  await relayIdentityNow()
+  return { groupId }
+}
+
 /** Members' disposal confirmations, relayed to Identity (iam-integration's group deletion, step 6). */
 const confirmDisposal = createDisposalConfirmationHandler({
   async record(input) {
