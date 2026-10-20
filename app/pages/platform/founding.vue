@@ -36,11 +36,14 @@ async function found() {
       class="space-y-3"
     >
       <p>You are the platform's super administrator: the founding owner of the platform group.</p>
-      <UButton
-        to="/configuration?scope=platform"
-        label="Open the platform's settings"
-        icon="i-lucide-settings"
-      />
+      <p>
+        <NuxtLink
+          to="/configuration?scope=platform"
+          class="font-semibold underline"
+        >
+          Open the platform's settings
+        </NuxtLink>
+      </p>
     </div>
     <template v-else>
       <p>
@@ -50,7 +53,7 @@ async function found() {
       <p
         v-if="state in MESSAGES"
         role="alert"
-        class="text-error"
+        class="font-semibold"
       >
         {{ MESSAGES[state as keyof typeof MESSAGES] }}
       </p>
@@ -74,6 +77,7 @@ async function found() {
         <UButton
           type="submit"
           label="Found the platform"
+          color="neutral"
           :loading="state === 'sending'"
         />
       </form>

@@ -85,13 +85,17 @@ test.describe.serial('IAM suite', () => {
 
       // The dev server builds the page on its first visit: wait until it is hydrated, or the form submits natively.
       await ownerPage.goto('/platform/founding', { waitUntil: 'networkidle' })
+      const accessible = async () => {
+        const results = await new AxeBuilder({ page: ownerPage }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+        expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
+      }
+      await accessible()
       await ownerPage.getByLabel('Founding code').fill(code)
       const founded = ownerPage.waitForResponse(response => response.url().endsWith('/api/platform/founding'))
       await ownerPage.getByRole('button', { name: 'Found the platform' }).click()
       platformGroupId = (await (await founded).json()).groupId
       await expect(ownerPage.getByRole('status')).toContainText('You are the platform\'s super administrator')
-      const results = await new AxeBuilder({ page: ownerPage }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
-      expect(results.violations.map(v => v.id)).toEqual([])
+      await accessible()
 
       // Once founded, the code is spent and the script issues no other.
       expect((await ownerPage.request.post('/api/platform/founding', { data: { code }, headers })).status()).toBe(409)
