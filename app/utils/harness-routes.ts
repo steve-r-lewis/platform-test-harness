@@ -29,8 +29,8 @@ export function harnessRouteAccess(routeName: unknown): HarnessRouteAccess {
   return OPEN_ROUTES.has(String(routeName ?? '')) ? 'public' : 'signed-in'
 }
 
-/** The IAM members' pages supply their own `<main>` landmark; the shell must not add another. */
-const PAGES_WITH_MAIN = ['authentication-', 'identity-', 'authorisation-', 'profile-']
+/** The IAM members' and the configuration layer's pages supply their own `<main>` landmark; the shell must not add another. */
+const PAGES_WITH_MAIN = ['authentication-', 'identity-', 'authorisation-', 'profile-', 'configuration-']
 
 export function harnessPageOwnsMain(routeName: unknown): boolean {
   const name = String(routeName ?? '')

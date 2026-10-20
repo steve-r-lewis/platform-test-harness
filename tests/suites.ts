@@ -35,6 +35,12 @@ export const TEST_SUITES: TestSuite[] = [
     layers: ['@nuxt4-layers/authentication', '@nuxt4-layers/identity', '@nuxt4-layers/authorisation', '@nuxt4-layers/profile', '@nuxt4-layers/iam-integration']
   },
   {
+    key: 'settings',
+    label: 'Settings: the configuration layer through the IAM suite',
+    files: ['tests/e2e/settings.spec.ts'],
+    layers: ['@nuxt4-layers/configuration-service', '@nuxt4-layers/authentication', '@nuxt4-layers/identity', '@nuxt4-layers/authorisation', '@nuxt4-layers/iam-integration']
+  },
+  {
     key: 'theme-manager',
     label: 'Theme Manager: runtime presentation and Theme editing',
     files: ['tests/e2e/theme-manager.spec.ts'],
