@@ -145,6 +145,22 @@ export function applyIdentityPolicy(): void {
   if (configurationHarness.ready && iamHarness.platformGroupId) provideConfigurationPlatformGroup(iamHarness.platformGroupId)
 }
 
+/**
+ * Makes the identity the founding owner of the default tenant's first root
+ * group, the platform group: its owners are the platform's super
+ * administrators. Identity refuses it once a root group exists. Behind the
+ * founding code (server/api/platform/founding.post.ts) and the test probe.
+ */
+export async function foundPlatform(ownerId: string): Promise<{ groupId: string }> {
+  await iamHarness.ready
+  if (!iamHarness.operator) throw Object.assign(new Error('The IAM suite is not composed.'), { code: 'unavailable' })
+  const { groupId } = await bootstrapIdentityRootGroup({ pool: iamHarness.operator, tenantId: iamHarness.tenantId!, name: 'Platform', firstOwnerId: ownerId, correlationId: newCorrelationId() })
+  iamHarness.platformGroupId = groupId
+  applyIdentityPolicy()
+  await relayIdentityNow()
+  return { groupId }
+}
+
 /** Members' disposal confirmations, relayed to Identity (iam-integration's group deletion, step 6). */
 const confirmDisposal = createDisposalConfirmationHandler({
   async record(input) {
@@ -162,7 +178,7 @@ export async function tenantExport() {
   return tenantExportFromMembers({ exportIdentityTenant: exportIdentityTenantData, exportAuthorisationTenant: exportAuthorisationTenantData })
 }
 
-/** Relays Identity's outbox, then Profile's, until both are empty: what the timers do, for the test probes. */
+/** Relays Identity's outbox, then Profile's, Authorisation's and the configuration layer's, until each is empty: what the timers do, for the test probes. */
 export async function relayIdentityNow(): Promise<void> {
   await iamHarness.ready
   for (;;) {
@@ -176,6 +192,9 @@ export async function relayIdentityNow(): Promise<void> {
     const result = await relayAuthorisationOutbox({ limit: 100, publish: publishAuthorisationEvent })
     if (result.published === 0 || result.failed > 0) break
   }
+  await relayConfigurationEvents((event) => {
+    if (harnessTestMode) iamHarness.events.push(event as never)
+  })
 }
 
 /** Authorisation's events: disposals are confirmed to Identity; the test probes record them all. */

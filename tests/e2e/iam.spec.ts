@@ -1,6 +1,8 @@
+import { execFileSync } from 'node:child_process'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { enrolAuthenticator, lastLink, ORIGIN, PASSWORD, recorder, signInAtAal2, signInWithPassword, verifiedAccount } from './support/authentication'
+import { e2eDatabaseUrl } from './support/database'
 import type { AssignmentView, Change, Person } from './support/iam'
 import { accessChangeOf, advance, assignmentsIn, changeOf, clockNow, createGroup, DAY, decide, decideAccess, events, HOUR, invitationLink, join, maintain, membershipIn, MINUTE, personWithPasskey, personWithPassword, principalOf, requestAccessChange, requestChange } from './support/iam'
 
@@ -25,6 +27,18 @@ async function signedIn(page: Page): Promise<{ email: string, principalId: strin
 }
 
 const relay = (page: Page) => page.request.post('/api/__harness/iam/relay', { headers })
+
+/** The operator's founding step (README, "The first super administrator"): the script's one-time code. Throws when the script refuses. */
+function foundingCode(): string {
+  const out = execFileSync(process.execPath, ['scripts/found-platform.ts'], { env: { ...process.env, HARNESS_DATABASE_URL: e2eDatabaseUrl().toString() }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  return out.split('\n')[1]!.trim()
+}
+
+/** A request to change one of the platform's own settings. */
+const platformSettingChange = (page: Page) => page.request.post('/api/configuration/changes', {
+  data: { target: { scope: 'platform' }, set: { 'site.tagline': 'Founded' }, expected: { 'site.tagline': null }, justification: { reasonCode: 'update' } },
+  headers
+})
 
 /**
  * Another person, signed in with a password: enough for the members' APIs. Pass
@@ -61,12 +75,46 @@ test.describe.serial('IAM suite', () => {
     expect(self.actor.personalGroup.groupId).toMatch(UUID_V7)
   })
 
-  test('group lifecycle: Authorisation decides Identity\'s permissions from roles that follow Identity\'s owners', async ({ browser }) => {
-    const { principal } = await (await ownerPage.request.get('/api/authentication/session')).json()
-    const bootstrap = await ownerPage.request.post('/api/__harness/iam/bootstrap', { data: { ownerId: principal.principalId }, headers })
-    expect(bootstrap.status()).toBe(200)
-    platformGroupId = (await bootstrap.json()).groupId
+  test('founding: the operator\'s one-time code makes the person who redeems it the platform\'s only super administrator', async ({ browser }) => {
+    const outsider = await anotherPerson(browser)
+    try {
+      const code = foundingCode()
+      // A password alone is below the policy's second factor; a wrong code is refused. Neither spends the code.
+      expect((await (await outsider.page.request.post('/api/platform/founding', { data: { code }, headers })).json()).data).toEqual({ code: 'insufficient-assurance' })
+      expect((await ownerPage.request.post('/api/platform/founding', { data: { code: 'not-the-code-0123456789' }, headers })).status()).toBe(403)
 
+      // The dev server builds the page on its first visit: wait until it is hydrated, or the form submits natively.
+      await ownerPage.goto('/platform/founding', { waitUntil: 'networkidle' })
+      const accessible = async () => {
+        const results = await new AxeBuilder({ page: ownerPage }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
+        expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
+      }
+      await accessible()
+      await ownerPage.getByLabel('Founding code').fill(code)
+      const founded = ownerPage.waitForResponse(response => response.url().endsWith('/api/platform/founding'))
+      await ownerPage.getByRole('button', { name: 'Found the platform' }).click()
+      platformGroupId = (await (await founded).json()).groupId
+      await expect(ownerPage.getByRole('status')).toContainText('You are the platform\'s super administrator')
+      await accessible()
+
+      // Once founded, the code is spent and the script issues no other.
+      expect((await ownerPage.request.post('/api/platform/founding', { data: { code }, headers })).status()).toBe(409)
+      expect(() => foundingCode()).toThrow()
+
+      // The super administrator alone may change the application's own settings; anyone else is refused.
+      await owner.signInWithPasskey()
+      const change = await platformSettingChange(ownerPage)
+      expect(change.status()).toBe(202)
+      expect(await change.json()).toMatchObject({ target: { scope: 'platform' }, risk: 'critical', route: 'published-delay' })
+      expect((await ownerPage.request.post(`/api/configuration/changes/${(await change.json()).changeId}/cancel`, { headers })).status()).toBe(200)
+      expect((await platformSettingChange(outsider.page)).status()).toBe(403)
+      expect((await outsider.page.request.get('/api/configuration/admin?scope=platform')).status()).toBe(403)
+    } finally {
+      await outsider.close()
+    }
+  })
+
+  test('group lifecycle: Authorisation decides Identity\'s permissions from roles that follow Identity\'s owners', async ({ browser }) => {
     // The founding owner holds `owner` in Authorisation, applied from Identity's events.
     expect((await ownerPage.request.get(`/api/identity/groups/${platformGroupId}`)).status()).toBe(200)
 
@@ -103,6 +151,9 @@ test.describe.serial('IAM suite', () => {
       const { joinRequestId } = await asked.json()
       expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
       await relay(ownerPage)
+
+      // A member of the platform group, but no owner: the application's own settings are not theirs.
+      expect((await platformSettingChange(member.page)).status()).toBe(403)
 
       const createChild = (name: string) => member.page.request.post('/api/identity/groups', { data: { parentGroupId: platformGroupId, name }, headers })
       const viewGroup = () => member.page.request.get(`/api/identity/groups/${platformGroupId}`)
@@ -1311,6 +1362,12 @@ test.describe.serial('IAM suite', () => {
       expect(provisioned.status()).toBe(200)
       const { tenantId, groupId: root } = await provisioned.json() as { tenantId: string, groupId: string }
       const child = await createGroup(tenantOwner.page, root, 'Closing Team')
+      // A low-risk setting of the team, applied at once, which the export carries.
+      const tagline = await tenantOwner.page.request.post('/api/configuration/changes', {
+        data: { target: { scope: 'group', groupId: child }, set: { 'site.tagline': 'Closing soon' }, expected: { 'site.tagline': null }, justification: { reasonCode: 'update' } },
+        headers
+      })
+      expect(tagline.status()).toBe(200)
       const exportOf = (page: Page) => page.request.get(`/api/tenants/${tenantId}/export`)
 
       // Nothing to export before the tenant is closing.
@@ -1341,9 +1398,14 @@ test.describe.serial('IAM suite', () => {
       const exported = await exportOf(tenantOwner.page)
       expect(exported.status()).toBe(200)
       expect(exported.headers()['cache-control']).toBe('no-store')
-      const records = await exported.json() as { identity: { groups: { groupId: string }[] }, authorisation: unknown }
+      const records = await exported.json() as { identity: { groups: { groupId: string }[] }, authorisation: unknown, configuration: { values: { scope_id: string, key: string, value: unknown }[] } }
       expect(records.identity.groups.map(g => g.groupId)).toEqual(expect.arrayContaining([root, child]))
       expect(records.authorisation).not.toBeNull()
+      expect(records.configuration.values).toEqual([expect.objectContaining({ scope_id: child, key: 'site.tagline', value: 'Closing soon' })])
+      // The configuration layer's events carry keys and identifiers, never the value.
+      const changed = (await events(ownerPage) as { type: string, data: Record<string, unknown> }[]).find(e => e.type === 'configuration.changed' && e.data.scopeId === child)
+      expect(changed?.data).toMatchObject({ scope: 'group', keys: ['site.tagline'] })
+      expect(JSON.stringify(changed)).not.toContain('Closing soon')
       const text = JSON.stringify(records)
       expect(text).not.toContain(tenantOwner.email)
       expect(text).not.toContain('@')

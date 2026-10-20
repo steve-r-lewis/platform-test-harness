@@ -11,9 +11,9 @@ const IDENTIFIER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * The host's governance export endpoint (iam-integration's tenant
  * lifecycle): during a tenant's notice period, an owner of one of its root
  * groups downloads its governance records. Identity decides who may have
- * it; Authorisation's part is asked for only once Identity has agreed. It
- * holds identifiers, codes, dates and group names, never personal data, and
- * nothing keeps it.
+ * it; Authorisation's part, and the configuration layer's (the tenant's and
+ * its groups' settings and their history), are asked for only once Identity
+ * has agreed. Nothing keeps it.
  */
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'cache-control', 'no-store')
@@ -32,5 +32,5 @@ export default defineEventHandler(async (event) => {
   }
   // Identity answers forbidden for a tenant it does not know; null never reaches here.
   if (!records) throw createError({ statusCode: 403, data: { code: 'forbidden' } })
-  return records
+  return { ...records, configuration: await exportTenantConfiguration(tenantId) }
 })
