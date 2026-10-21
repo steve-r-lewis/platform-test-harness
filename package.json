@@ -19,7 +19,7 @@
     "@nuxt/ui": "^4.11.1",
     "@nuxt4-layers/authentication": "git+https://github.com/nuxt4-layers/authentication.git#v1.0.0",
     "@nuxt4-layers/authorisation": "git+https://github.com/nuxt4-layers/authorisation.git#v1.0.0",
-    "@nuxt4-layers/configuration-service": "git+https://github.com/nuxt4-layers/configuration.git#v1.0.0",
+    "@nuxt4-layers/configuration": "git+https://github.com/nuxt4-layers/configuration.git#f5506dfaba143d0512980dcd08969c6696079c41",
     "@nuxt4-layers/iam-integration": "git+https://github.com/nuxt4-layers/iam-integration.git#v1.0.0",
     "@nuxt4-layers/identity": "git+https://github.com/nuxt4-layers/identity.git#v1.0.0",
     "@nuxt4-layers/profile": "git+https://github.com/nuxt4-layers/profile.git#v1.0.0",
