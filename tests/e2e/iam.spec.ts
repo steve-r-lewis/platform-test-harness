@@ -113,6 +113,26 @@ test.describe.serial('IAM suite', () => {
       expect((await ownerPage.request.post(`/api/configuration/changes/${(await change.json()).changeId}/cancel`, { headers })).status()).toBe(200)
       expect((await platformSettingChange(outsider.page)).status()).toBe(403)
       expect((await outsider.page.request.get('/api/configuration/admin?scope=platform')).status()).toBe(403)
+
+      // The shell takes the site's name from the platform's settings: renamed after the published delay, then restored.
+      const rename = async (name: string | null) => {
+        await owner.signInWithPasskey()
+        const { digests } = await (await ownerPage.request.get('/api/configuration/admin?scope=platform')).json() as { digests: Record<string, string> }
+        const requested = await ownerPage.request.post('/api/configuration/changes', {
+          data: { target: { scope: 'platform' }, set: { 'site.name': name }, expected: { 'site.name': digests['site.name'] ?? null }, justification: { reasonCode: 'rebrand' } },
+          headers
+        })
+        expect(await requested.json()).toMatchObject({ route: 'published-delay', status: 'delayed' })
+        await advance(ownerPage, 8 * DAY)
+        await maintain(ownerPage)
+      }
+      await rename('Harness Platform')
+      await ownerPage.goto('/')
+      await expect(ownerPage.getByRole('link', { name: 'Harness Platform', exact: true })).toBeVisible()
+      await expect(ownerPage).toHaveTitle('Harness Platform')
+      await rename(null)
+      await ownerPage.goto('/')
+      await expect(ownerPage.getByRole('link', { name: 'Theme Manager Test Harness', exact: true })).toBeVisible()
     } finally {
       await outsider.close()
     }
@@ -250,11 +270,18 @@ test.describe.serial('IAM suite', () => {
       expect((await ownerPage.request.post(`/api/identity/join-requests/${joinRequestId}/decision`, { data: { decision: 'approve' }, headers })).status()).toBe(200)
       await relay(ownerPage)
 
+      // A setting of the member's own account, which the configuration layer holds beside the members.
+      const chosen = await member.page.request.post('/api/configuration/changes', {
+        data: { target: { scope: 'account' }, set: { 'harness.notices': 'daily' }, expected: { 'harness.notices': null }, justification: { reasonCode: 'update' } },
+        headers
+      })
+      expect(await chosen.json()).toMatchObject({ target: { scope: 'account' }, status: 'applied' })
+
       const opened = await member.page.request.post('/api/profile/me/requests', { data: { type: 'access' }, headers })
       expect(opened.status()).toBe(201)
       const request = await opened.json() as { requestId: string, status: string, parts: { part: string, status: string }[] }
       expect(request.status).toBe('completed')
-      expect(request.parts.map(part => `${part.part}:${part.status}`)).toEqual(['profile:done', 'identity:done', 'authentication:done', 'authorisation:done'])
+      expect(request.parts.map(part => `${part.part}:${part.status}`)).toEqual(['profile:done', 'identity:done', 'authentication:done', 'authorisation:done', 'configuration:done'])
 
       const archive = await member.page.request.get(`/api/profile/me/requests/${request.requestId}/archive`)
       expect(archive.status()).toBe(200)
@@ -265,10 +292,12 @@ test.describe.serial('IAM suite', () => {
           identity: { identity: { identityId: string }, memberships: { groupId: string }[] }
           authentication: { signInIdentifiers: unknown[], password: unknown }
           authorisation: { roleAssignments: unknown[] }
+          configuration: { identityId: string, values: { key: string, value: unknown }[] }
         }
       }
       // Each member answers for what it holds, through iam-integration's coordinator.
       expect(parts.identity.identity.identityId).toBe(member.principalId)
+      expect(parts.configuration).toMatchObject({ identityId: member.principalId, values: [expect.objectContaining({ key: 'harness.notices', value: 'daily' })] })
       expect(parts.identity.memberships.map(m => m.groupId)).toContain(platformGroupId)
       expect(parts.authentication.signInIdentifiers).toEqual([expect.objectContaining({ kind: 'email', value: member.email, verified: true })])
       expect(parts.authentication.password).toEqual({ set: true })

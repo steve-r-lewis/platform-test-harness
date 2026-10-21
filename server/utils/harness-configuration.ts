@@ -1,4 +1,5 @@
-import { CONFIGURATION_PERMISSIONS } from '@nuxt4-layers/configuration/contracts'
+import { z } from 'zod'
+import { CONFIGURATION_PERMISSIONS, defineConfigurationSetting } from '@nuxt4-layers/configuration/contracts'
 
 /**
  * The configuration layer's permissions, for Authorisation's catalogue and
@@ -18,6 +19,11 @@ export const CONFIGURATION_HARNESS_PERMISSIONS = CONFIGURATION_PERMISSIONS.map((
   risk,
   effect: effect === 'view' ? 'view' as const : 'change' as const
 }))
+
+/** The harness's own settings: how often a person would like a summary of their notices (stored only; the harness sends none). */
+export const HARNESS_CONFIGURATION_SETTINGS = [
+  defineConfigurationSetting({ key: 'harness.notices', schema: z.enum(['daily', 'weekly', 'never']), scopes: ['platform', 'account'], visibility: 'members', sensitivity: 'organisational', risk: 'low', default: 'weekly' })
+]
 
 /**
  * Set by server/plugins/settings-harness.ts when the configuration layer is
@@ -42,6 +48,13 @@ export async function exportTenantConfiguration(tenantId: string) {
   if (!configurationHarness.ready) return null
   await configurationHarness.ready()
   return exportConfigurationTenantData({ tenantId })
+}
+
+/** The configuration layer's part of a person's data-subject access request: their own account settings, when it is composed. */
+export async function exportAccountConfiguration(input: { identityId: string }) {
+  if (!configurationHarness.ready) return null
+  await configurationHarness.ready()
+  return exportConfigurationAccountData(input)
 }
 
 /** Applies one of Identity's relayed events to the configuration layer, when it is composed. */

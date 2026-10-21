@@ -23,8 +23,10 @@ useHead({
   }
 })
 
+// The default title is the site's name from the configuration layer; pages set their own.
+const siteName = useHarnessSiteName()
 useSeoMeta({
-  title: 'Theme Manager Test Harness',
+  title: () => siteName.value,
   description: 'Black-box integration harness for the Nuxt 4 Theme Manager layer.'
 })
 </script>

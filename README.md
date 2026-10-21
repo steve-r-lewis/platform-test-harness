@@ -33,8 +33,8 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authentication | `08f0f24a3be9e34d9a11f1002ea735c8437fdd70` (0.6.0, phase 8: service identities' client credentials and tokens, beside the identity port, credential recovery records, break-glass accounts and retention) |
 | Identity | `0a533d7921ce50f78d01591df10b64b73f9ae51b` (0.1.0, contract 8: service identities, beside approvals, end of life and break-glass) |
 | Authorisation | `be59e0a1e54af87c835fcf213addcc0a542bbdf6` (0.4.0, phase 7: service identities never request, decide or approve a change) |
-| Profile | `45fa80c6b6f4fd077bc5729f48cc9dc6ac4bceed` (0.4.0, data-subject requests, legal holds, end of life) |
-| IAM integration | `69eb3df32eed2a62257e711243976cbc268c1b62` (0.1.0, reference adapters, the service identities process, its governance port and owners' notices) |
+| Profile | `e3ab7d465ac0d046eacc788a985841e61099d075` (1.0.0 and the `configuration` part of access requests: data-subject requests, legal holds, end of life) |
+| IAM integration | `e5a915eed134a0a5e667be9f24c2e8c8d8d38f6e` (1.0.0 and the coordinator's configuration part: reference adapters, the service identities process, its governance port and owners' notices) |
 | Configuration | `f5506dfaba143d0512980dcd08969c6696079c41` (1.1.0, contract version 1, as `@nuxt4-layers/configuration`: site, organisation, group and account settings with approvals, export and import, through its own adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
@@ -66,6 +66,10 @@ Authentication is composed as a peer of Theme Manager (`extends` both; neither d
 
 The configuration layer (site, organisation and group settings, changed only through approved pending changes) runs with the IAM suite, connected only through its own reference adapters (`server/plugins/settings-harness.ts`): Identity's directory and access governance, Authorisation's qualification and Authentication's principal. Identity's relayed events keep its tenant states and dispose of a group's or tenant's settings when due; its own outbox is relayed with the members' (in test mode, recorded with their events). Its permissions join Authorisation's catalogue (`server/utils/harness-configuration.ts`), so a group's owners manage its settings and only the platform group's owners the platform's. The harness serves every tenant on `localhost`, which no tenant claims: the platform's own host name, where Authorisation alone limits what a person reaches. Its pages are `/configuration` and `/configuration/changes` (the Settings module), where each person also chooses their own account's settings; `tests/e2e/settings.spec.ts` covers them.
 
+- **The site's name:** the shell's header and default title come from the configuration layer's `site.name` (`useHarnessSiteName`). The deployment's name, `Theme Manager Test Harness`, holds until the platform's super administrators change it, and is the fallback without a database. Pages keep their own titles.
+- **Account settings:** the harness declares one per-account setting of its own, `harness.notices`, so the account scope is exercised. The harness only stores it.
+- **Data-subject access:** a person's own account settings are the `configuration` part of their access archive, through iam-integration's coordinator (`exportConfigurationAccountData`). The configuration layer deletes them itself when the account closes.
+
 ### The first super administrator
 
 The platform group, the default tenant's first root group, is the application's own: its owners are the super administrators, who alone hold the critical permissions, among them changing the platform's settings. Anyone else, a member or administrator of the platform group included, needs an explicit grant through Authorisation's approved changes. Nothing creates that group at start-up; the operator founds it once:
@@ -93,7 +97,7 @@ Profile joins when `HARNESS_PROFILE_DATABASE_URL` (its own runtime role, which o
 | Profile's subject resolver | Authentication's `getAuthenticatedPrincipal` |
 | Profile's disclosure context | Identity's disclosure-context port |
 | Profile's key wrapper | Profile's local wrapper over `HARNESS_PROFILE_MASTER_KEY` |
-| Profile's request coordinator | `profileRequestCoordinatorFromMembers` over Identity's, Authentication's and Authorisation's exports |
+| Profile's request coordinator | `profileRequestCoordinatorFromMembers` over Identity's, Authentication's and Authorisation's exports, and the configuration layer's export of a person's account settings |
 | Profile's access decision | `profileAccessDecisionFromAuthorisation` over `authorise`, with Profile's permission in Authorisation's catalogue and roles |
 | Profile's notifier | The harness's own: records verification codes in test mode, sends email ones to Mailpit with `HARNESS_SMTP_URL`, and logs neither the address nor the code |
 | Profile's `ProfileGroupName` | The harness's own component (`app/components/ProfileGroupName.vue`): the names of groups a person left, from Identity's `GET /api/identity/me` |
