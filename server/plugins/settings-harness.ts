@@ -16,6 +16,12 @@ import { iamHarness } from './iam-harness'
  * reaches whatever Authorisation allows.
  */
 export default defineNitroPlugin((nitro) => {
+  // The site's name until the platform's settings say otherwise, and a
+  // setting of the harness's own that each person chooses for their account
+  // (the harness only stores it), so the account scope and its part of a
+  // data-subject access request are exercised.
+  provideConfigurationDeployment({ 'site.name': HARNESS_SITE_NAME })
+  provideConfigurationCatalogue(HARNESS_CONFIGURATION_SETTINGS)
   const operator = harnessDatabase()
   if (!operator || !process.env.HARNESS_IDENTITY_DATABASE_URL) return
   if (harnessTestMode) provideConfigurationClock(harnessClock)

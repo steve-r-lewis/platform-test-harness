@@ -251,7 +251,9 @@ function composeProfile(operator: pg.Pool): boolean {
       return exportIdentityData(input)
     },
     exportAuthentication: exportAuthenticationData,
-    exportAuthorisation: exportAuthorisationData
+    exportAuthorisation: exportAuthorisationData,
+    // The person's own account settings, which the configuration layer holds beside the members.
+    exportConfiguration: exportAccountConfiguration
   }))
   // Whether a viewer may see a group's suspended members, from Authorisation.
   provideProfileAccessDecision(profileAccessDecisionFromAuthorisation({ authorise }))

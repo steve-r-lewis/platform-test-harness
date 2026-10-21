@@ -7,6 +7,7 @@ const { isAuthenticated, needsSecondFactor, signOut } = useAuthentication()
 const routes = useRuntimeConfig().public.authentication.routes
 const signedIn = computed(() => isAuthenticated.value && !needsSecondFactor.value)
 const modules = HARNESS_MODULES.map(({ label, icon, to }) => ({ label, icon, to }))
+const siteName = useHarnessSiteName()
 
 async function leave() {
   await signOut()
@@ -26,7 +27,7 @@ const account = computed(() => [
         to="/"
         class="font-semibold"
       >
-        Theme Manager Test Harness
+        {{ siteName }}
       </NuxtLink>
     </template>
 
