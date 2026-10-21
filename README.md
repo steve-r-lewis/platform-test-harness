@@ -33,8 +33,8 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authentication | `08f0f24a3be9e34d9a11f1002ea735c8437fdd70` (0.6.0, phase 8: service identities' client credentials and tokens, beside the identity port, credential recovery records, break-glass accounts and retention) |
 | Identity | `0a533d7921ce50f78d01591df10b64b73f9ae51b` (0.1.0, contract 8: service identities, beside approvals, end of life and break-glass) |
 | Authorisation | `be59e0a1e54af87c835fcf213addcc0a542bbdf6` (0.4.0, phase 7: service identities never request, decide or approve a change) |
-| Profile | `e3ab7d465ac0d046eacc788a985841e61099d075` (1.0.0 and the `configuration` part of access requests: data-subject requests, legal holds, end of life) |
-| IAM integration | `e5a915eed134a0a5e667be9f24c2e8c8d8d38f6e` (1.0.0 and the coordinator's configuration part: reference adapters, the service identities process, its governance port and owners' notices) |
+| Profile | `09babb2440b8f8f6cbb1e1fed4258bb3e72627fc` (1.1.0, the `configuration` part of access requests, beside data-subject requests, legal holds, end of life) |
+| IAM integration | `a51bffe7e4730192047c9fa47b0fcb5d28ee7fcd` (1.1.0, the coordinator's configuration part, beside reference adapters, the service identities process, its governance port and owners' notices) |
 | Configuration | `f5506dfaba143d0512980dcd08969c6696079c41` (1.1.0, contract version 1, as `@nuxt4-layers/configuration`: site, organisation, group and account settings with approvals, export and import, through its own adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
