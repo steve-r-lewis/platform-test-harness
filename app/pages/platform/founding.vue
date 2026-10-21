@@ -6,6 +6,11 @@
  * decides everything; this page only reports the answer.
  */
 const code = ref('')
+// Set once hydrated: before then, the form would submit natively.
+const hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
+})
 const state = ref<'idle' | 'sending' | 'founded' | 'refused' | 'founded-already' | 'failed'>('idle')
 const MESSAGES = {
   'refused': 'That code is not valid. It may have been used or have expired: ask the operator for a new one.',
@@ -59,6 +64,7 @@ async function found() {
       </p>
       <form
         class="space-y-4"
+        :data-hydrated="hydrated || undefined"
         @submit.prevent="found"
       >
         <UFormField

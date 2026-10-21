@@ -84,16 +84,20 @@ test.describe.serial('IAM suite', () => {
       expect((await ownerPage.request.post('/api/platform/founding', { data: { code: 'not-the-code-0123456789' }, headers })).status()).toBe(403)
 
       // The dev server builds the page on its first visit: wait until it is hydrated, or the form submits natively.
-      await ownerPage.goto('/platform/founding', { waitUntil: 'networkidle' })
+      await ownerPage.goto('/platform/founding')
+      await expect(ownerPage.locator('form[data-hydrated]')).toBeVisible()
       const accessible = async () => {
         const results = await new AxeBuilder({ page: ownerPage }).include('main').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()
         expect(results.violations.map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(', ')}`)).toEqual([])
       }
       await accessible()
       await ownerPage.getByLabel('Founding code').fill(code)
-      const founded = ownerPage.waitForResponse(response => response.url().endsWith('/api/platform/founding'))
-      await ownerPage.getByRole('button', { name: 'Found the platform' }).click()
-      platformGroupId = (await (await founded).json()).groupId
+      const [founded] = await Promise.all([
+        ownerPage.waitForResponse(response => response.url().endsWith('/api/platform/founding')),
+        ownerPage.getByRole('button', { name: 'Found the platform' }).click()
+      ])
+      expect(founded.status()).toBe(200)
+      platformGroupId = (await founded.json()).groupId
       await expect(ownerPage.getByRole('status')).toContainText('You are the platform\'s super administrator')
       await accessible()
 
@@ -289,6 +293,8 @@ test.describe.serial('IAM suite', () => {
   test('contact verification: Profile sends a code through the host, and the detail is verified until it changes', async ({ browser }) => {
     const person = await anotherPerson(browser)
     try {
+      // Profile's record follows Identity's relayed events: let them land before reading its version.
+      await relay(person.page)
       const own = await (await person.page.request.get('/api/profile/me')).json() as { version: number }
       const saved = await person.page.request.patch('/api/profile/me', { data: { expectedVersion: own.version, changes: { email: 'contact@example.org' } }, headers })
       expect(saved.status()).toBe(200)
