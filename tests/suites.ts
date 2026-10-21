@@ -32,7 +32,8 @@ export const TEST_SUITES: TestSuite[] = [
     key: 'iam',
     label: 'IAM suite: processes across Identity, Authentication, Authorisation and Profile',
     files: ['tests/e2e/iam.spec.ts'],
-    layers: ['@nuxt4-layers/authentication', '@nuxt4-layers/identity', '@nuxt4-layers/authorisation', '@nuxt4-layers/profile', '@nuxt4-layers/iam-integration']
+    // The founding procedure, the platform's settings and the tenant export reach the configuration layer too.
+    layers: ['@nuxt4-layers/authentication', '@nuxt4-layers/identity', '@nuxt4-layers/authorisation', '@nuxt4-layers/profile', '@nuxt4-layers/iam-integration', '@nuxt4-layers/configuration-service']
   },
   {
     key: 'settings',

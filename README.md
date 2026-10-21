@@ -146,6 +146,7 @@ As more layers are composed, the browser suite grows, and a change usually needs
 |---|---|---|
 | `shell` | `authentication.spec.ts`, `routes.spec.ts` | Always: composition, sign-in, routes and access, which every change can break |
 | `iam` | `iam.spec.ts` | When chosen |
+| `settings` | `settings.spec.ts` | When chosen |
 | `theme-manager` | `theme-manager.spec.ts` | When chosen |
 
 ```bash
