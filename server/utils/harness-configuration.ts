@@ -1,4 +1,4 @@
-import { CONFIGURATION_PERMISSIONS } from '@nuxt4-layers/configuration-service/contracts'
+import { CONFIGURATION_PERMISSIONS } from '@nuxt4-layers/configuration/contracts'
 
 /**
  * The configuration layer's permissions, for Authorisation's catalogue and

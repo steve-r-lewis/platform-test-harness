@@ -35,7 +35,7 @@ Layer dependencies are pinned to exact Git commits on each layer's `master`. CI 
 | Authorisation | `be59e0a1e54af87c835fcf213addcc0a542bbdf6` (0.4.0, phase 7: service identities never request, decide or approve a change) |
 | Profile | `45fa80c6b6f4fd077bc5729f48cc9dc6ac4bceed` (0.4.0, data-subject requests, legal holds, end of life) |
 | IAM integration | `69eb3df32eed2a62257e711243976cbc268c1b62` (0.1.0, reference adapters, the service identities process, its governance port and owners' notices) |
-| Configuration | `f9a1300797dfe75e4480e1f7715376c44d017786` (1.0.0, contract version 1: site, organisation, group and account settings with approvals, export and import, through its own adapters) |
+| Configuration | `f5506dfaba143d0512980dcd08969c6696079c41` (1.1.0, contract version 1, as `@nuxt4-layers/configuration`: site, organisation, group and account settings with approvals, export and import, through its own adapters) |
 
 Theme Manager's existing black-box Playwright coverage is retained, including the runtime Theme persistence regression that verifies a saved runtime radius survives fresh consumer navigation through the complete Theme Manager/Tailwind cascade.
 
